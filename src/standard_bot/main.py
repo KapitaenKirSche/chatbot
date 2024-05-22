@@ -54,7 +54,7 @@ def process_input(input):
     if dialogue_state == "greeting":
         process_input_greeting(input)
 
-#
+
 def process_input_greeting(input):
     global dialogue_state
     if "menu" in input.lower():
