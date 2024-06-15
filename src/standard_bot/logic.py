@@ -18,10 +18,10 @@ last_output = ""
 # Menü mit Pizzen und Getränken
 menu = {
     'pizzas': {
-        'margherita': {'price': 8.50, 'ingredients': ['Käse']},
-        'salami': {'price': 9.00, 'ingredients': ['Salami']},
-        'hawaii': {'price': 9.50, 'ingredients': ['Schinken', 'Ananas']},
-        'veggie': {'price': 8.00, 'ingredients': ['Paprika', 'Pilze', 'Zwiebeln']}
+        'margherita': {'price': 8.50, 'ingredients': ['käse']},
+        'salami': {'price': 9.00, 'ingredients': ['salami']},
+        'hawaii': {'price': 9.50, 'ingredients': ['schinken', 'ananas']},
+        'veggie': {'price': 8.00, 'ingredients': ['paprika', 'pilze', 'zwiebeln']}
     },
     'drinks': {
         'cola': {'price':2.50},
@@ -29,7 +29,10 @@ menu = {
         'bier': {'price':3.00}
     }
 }
-
+valid_order = []
+for a in menu:
+    for b in menu[a]:
+        valid_order.append(b)
 # Der Bot muss für jeden Teil bestimmte Sachen schreiben, erst dann kann mit dem Programm weitergegangen werden.
 outputs = {
     "greeting": [{
@@ -55,12 +58,17 @@ outputs = {
         "name" : "ordering_default",
         "checked" : False,
         "multiple": False,
-        "phrases" : ["Sehr schön. Um die Speisekarte zu sehen schreibe einfach 'Speisekarte'. Du kannst natürlich auch sofort bestellen (bspw. 3x Margeherita"]
+        "phrases" : ["Sehr schön. Um die Speisekarte zu sehen schreibe einfach 'Speisekarte'. Du kannst natürlich auch sofort bestellen (bspw. 3x Margherita"]
     }, {
         "name" : "show_menu",
         "checked" : False,
         "multiple": True,
         "phrases" : ["_menu"]
+    }, {
+        "name" : "new_order",
+        "checked" : False,
+        "multiple": True,
+        "phrases" : ["Danke für die Aufnahme einer Bestellung _user-name! Folgendes hast du gerade bestellt: \n_show-last-order \nMöchtest du den gesamten Warenkorb ansehen oder bearbeiten, die Speisekarte begutachten, nochmehr bestellen oder bezahlen"]
     }],
 
     "end_cancel" : [{
@@ -73,7 +81,7 @@ outputs = {
 
 # Warenkorb initialisieren
 cart = {}
-
+last_order = []
 
 # Funktionen für das verarbeiten des inputs basierend auf dem Status der Unterhaltung
 def process_input(input):
@@ -107,10 +115,12 @@ def process_input_greeting(input):
 def process_input_ordering(input):
     global dialogue_state, user_name, last_output, allowed_outputs
     allowed_outputs = []
+    if last_output in ["ordering_default", "show_menu"]:
+        if analyse_order_and_add_to_cart(input):
+            allowed_outputs.append("new_order")
     if last_output == "ordering_default":
         if input.lower() == "speisekarte":
             allowed_outputs.append("show_menu")
-
 
 
 
@@ -139,34 +149,83 @@ def ordering():
 
     return "Ich habe keine Antwort für dich, tut mir leid."
 
-
-
-
-
+#-----------------------------------------------------------------
 def show_menu():
     """Zeigt das Menü mit Pizzen und Getränken an."""
     menu_output_string = ""
 
     menu_output_string += "Pizzen:"
+    menu_output_string += "\n"
     for (pizza, attributes) in menu['pizzas'].items():
         menu_output_string += f"{pizza[0].capitalize() + pizza[1:]}: {attributes['price']}€"
+        menu_output_string+="\n"
 
     menu_output_string += ("\nGetränke:")
+    menu_output_string += "\n"
     for (drink, attributes) in menu['drinks'].items():
         menu_output_string += f"{drink[0].capitalize() + drink[1:]}: {attributes['price']}€"
+        menu_output_string += "\n"
     return menu_output_string
+
+def show_last_order(order):
+    pass
+
+def show_cart():
+    """Zeigt den aktuellen Inhalt des Warenkorbs an."""
+    if not cart:
+        print("Your cart is empty.")
+    else:
+        print("Your cart contains:")
+        for item, quantity in cart.items():
+            print(
+                f"{quantity}x {item[0].capitalize() + item[1:]} - {get_item_price(item)}€ each"
+            )
+
+
+#-----------------------------------------------------------------------------------------------------
+def analyse_order_and_add_to_cart(input):
+    """Prüft in einem Text, ob etwas bestellt worden ist, und fügt ggf. mit add_to_cart() zum Warenkorb hinzu."""
+    global valid_order, last_order
+    did_order = False
+    text_list = input.split()
+    for i in range(len(text_list)):
+        if text_list[i].lower() not in valid_order:
+            for j in range(len(text_list[i])):
+                if text_list[i][j].isnumeric() == False:
+                    text_list[i]=text_list[i][:j] +' '+ text_list[i][j + 1:]
+        text_list[i] = text_list[i].replace(' ', '')
+
+    currindex=-1
+    for i in text_list:
+        currindex+=1
+        if len(i) == 0:
+            del text_list[currindex]
+            currindex-=1
+        elif i.lower() in valid_order:
+            did_order = True
+
+    if did_order:
+        last_order=[]
+
+    for i in range(len(text_list)):
+        if text_list[i].lower() in valid_order:
+            did_order = True
+            if text_list[max(i-1,0)][0].isnumeric():
+                add_to_cart(text_list[i].lower(), text_list[max(i-1,0)])
+            else:
+                add_to_cart(text_list[i].lower(), 1)
+    return did_order
+
 
 def add_to_cart(item, quantity):
     """Fügt einen Artikel in einer bestimmten Menge zum Warenkorb hinzu."""
+    global cart, last_order, menu
     if item in menu['pizzas'] or item in menu['drinks']:
         if item in cart:
             cart[item] += quantity
         else:
             cart[item] = quantity
-        print(f"{quantity}x {item} zum Warenkorb hinzugefügt.")
-    else:
-        print(f"Sorry, wir haben {item} nicht im Menü.")
-
+        last_order.append(f"{quantity}x {item}\n")
 
 def remove_from_cart(item, quantity):
     """Entfernt einen Artikel in einer bestimmten Menge aus dem Warenkorb."""
@@ -183,16 +242,6 @@ def remove_from_cart(item, quantity):
         print(f"{item} ist nicht in deinem Warenkorb.")
 
 
-def view_cart():
-    """Zeigt den aktuellen Inhalt des Warenkorbs an."""
-    if not cart:
-        print("Your cart is empty.")
-    else:
-        print("Your cart contains:")
-        for item, quantity in cart.items():
-            print(
-                f"{quantity}x {item[0].capitalize() + item[1:]} - {get_item_price(item)}€ each"
-            )
 
 
 def checkout():
@@ -246,7 +295,9 @@ def replace_vars(text):
     global user_name, PIZZERIA_NAME
     replace = {'_user-name' : user_name,
                '_pizzeria-name' : PIZZERIA_NAME,
-               '_menu' : str(show_menu())}
+               '_menu' : str(show_menu()),
+               '_cart' : str(show_cart()),
+               '_show-last-order':str(show_last_order())}
 
     for condition in replace:
         text = text.replace(condition, replace[condition])
