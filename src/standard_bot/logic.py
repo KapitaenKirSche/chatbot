@@ -35,15 +35,18 @@ outputs = {
     "greeting": [{
         "name": "welcome",
         "checked": False,
+        "multiple" : False,
         "phrases": [f"Hallo und willkommen bei der Pizzeria _pizzeria-name! Was kann ich für sie tun?"
                     ]
     }, {
         "name": "name_q",
         "checked": False,
+        "multiple" : False,
         "phrases": ["Okay. Was ist denn dein Name?", "Sehr gut. Aber wie heißt du eigentlich?"]
     }, {
         "name": 'order_general_q',
         "checked": False,
+        "multiple": False,
         "phrases": [f"Freut mich _user-name. Möchtest du etwas bestellen?"]
 
     }],
@@ -51,16 +54,19 @@ outputs = {
     "ordering" : [{
         "name" : "ordering_default",
         "checked" : False,
+        "multiple": False,
         "phrases" : ["Sehr schön. Um die Speisekarte zu sehen schreibe einfach 'Speisekarte'. Du kannst natürlich auch sofort bestellen (bspw. 3x Margeherita"]
     }, {
         "name" : "show_menu",
         "checked" : False,
+        "multiple": True,
         "phrases" : ["_menu"]
     }],
 
     "end_cancel" : [{
         "name" : "end",
         "checked" : False,
+        "multiple": False,
         "phrases" : ["Schade. Ich wünsche dir noch einen schönen Tag _user-name, vielleicht möchtest du ja doch nochmal in Zukunft hier bestellen."]
     }]
 }
@@ -100,6 +106,11 @@ def process_input_greeting(input):
 
 def process_input_ordering(input):
     global dialogue_state, user_name, last_output, allowed_outputs
+    allowed_outputs = []
+    if last_output == "ordering_default":
+        if input.lower() == "speisekarte":
+            allowed_outputs.append("show_menu")
+
 
 
 
@@ -108,13 +119,13 @@ def greetings():
     """Begrüßung"""
     global outputs, allowed_outputs, last_output, user_name
     for dic in outputs["greeting"]:
-        if dic["checked"] == False:
+        if dic["checked"] == False or dic["multiple"] == True:
             if dic["name"] in allowed_outputs:
                 dic["checked"] = True
                 last_output = dic["name"]
                 return random.choice(dic["phrases"])
 
-    return "Ich habe keine Antwort für Sie, tut mir leid."
+    return "Ich habe keine Antwort für dich, tut mir leid."
 
 def ordering():
     """Bestellung"""
@@ -126,7 +137,7 @@ def ordering():
                 last_output = dic["name"]
                 return random.choice(dic["phrases"])
 
-    return "Ich habe keine Antwort für Sie, tut mir leid."
+    return "Ich habe keine Antwort für dich, tut mir leid."
 
 
 
