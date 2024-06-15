@@ -1,5 +1,9 @@
 import random
 
+#Data
+words_accept = ['ja', 'auf jeden fall', 'j', 'klar']
+words_decline = ['nein', 'ne', 'nicht', 'auf keinen fall']
+
 # Consts
 PIZZERIA_NAME = "Krustenkrach"
 
@@ -34,14 +38,14 @@ outputs = {
         "checked":
             False,
         "phrases": [
-            f"Hallo und willkommen bei der Pizzeria {PIZZERIA_NAME}! Was kann ich für sie tun?"
+            f"Hallo und willkommen bei der Pizzeria _pizzeria-name! Was kann ich für sie tun?"
         ]
     }, {
         "name": "name_q",
         "checked": False,
         "phrases": ["Okay. Was ist denn dein Name?", "Sehr gut. Aber wie heißt du eigentlich?"]
     }, {
-        "name": "name_a",
+        "name": 'order_q',
         "checked": False,
         "phrases": [f"Freut mich _user_name. Möchtest du etwas bestellen?"]
 
@@ -67,7 +71,7 @@ def process_input_greeting(input):
 
     elif last_output == "name_q":  # Gerade eben nach Name gefragt
         user_name = input
-        allowed_outputs.append("name_a")
+        allowed_outputs.append("order_q")
 
 
 # Funktionen für Ausgaben des Bots
@@ -164,7 +168,11 @@ def calculate_total():
 
 def replace_vars(text):
     """Ersetzt Variablen im Text durch den entsprechenden Wert."""
-    global user_name
-    text = text.replace("_user_name", user_name)
+    global user_name, PIZZERIA_NAME
+    replace = {'_user_name' : user_name,
+               '_pizzeria-name' : PIZZERIA_NAME}
+
+    for (condition, new) in replace:
+        text = text.replace(condition, new)
 
     return text
