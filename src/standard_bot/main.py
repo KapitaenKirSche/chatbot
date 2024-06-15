@@ -8,13 +8,10 @@ def main():
     if bot.user_input != "_init":
         bot.process_input(bot.user_input)
 
-    if bot.dialogue_state == "greeting":
-        return_text = bot.greetings()
-    elif bot.dialogue_state == "ordering":
-        return_text = bot.ordering()
+    return_text = bot.find_output(bot.dialogue_state)
 
     print(bot.replace_vars(return_text))
-    bot.user_input = input()
+    bot.user_input = input(" >> ")
 
 
 while bot.running:

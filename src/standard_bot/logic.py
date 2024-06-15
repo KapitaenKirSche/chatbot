@@ -58,17 +58,22 @@ outputs = {
         "name" : "ordering_default",
         "checked" : False,
         "multiple": False,
-        "phrases" : ["Sehr schön. Um die Speisekarte zu sehen schreibe einfach 'Speisekarte'. Du kannst natürlich auch sofort bestellen (bspw. 3x Margherita"]
+        "phrases" : ["Sehr schön. Um die Speisekarte zu sehen schreibe einfach 'Speisekarte'. Du kannst natürlich auch sofort bestellen (bspw. '3x Margherita und 2mal eine cola')"]
     }, {
         "name" : "show_menu",
         "checked" : False,
         "multiple": True,
-        "phrases" : ["_menu"]
+        "phrases" : ["Natürlich.\n_menu"]
     }, {
         "name" : "new_order",
         "checked" : False,
         "multiple": True,
         "phrases" : ["Danke für die Aufnahme einer Bestellung _user-name! Folgendes hast du gerade bestellt: \n_show-last-order \nMöchtest du den gesamten Warenkorb ansehen oder bearbeiten, die Speisekarte begutachten, nochmehr bestellen oder bezahlen"]
+    }, {
+        "name" : "show_cart",
+        "checked" : False,
+        "multiple": True,
+        "phrases" : ["Mit Vergnügen.\n_cart\nMöchtest du den Warenkorb bearbeiten? Du kannst natürlich auch schon bezahlen ('bezahlen') oder nochmehr bestellen."]
     }],
 
     "end_cancel" : [{
@@ -119,29 +124,19 @@ def process_input_ordering(input):
         if analyse_order_and_add_to_cart(input):
             allowed_outputs.append("new_order")
     if last_output == "ordering_default":
-        if input.lower() == "speisekarte":
+        if "speisekarte" in input.lower():
             allowed_outputs.append("show_menu")
 
-
+    elif last_output in ["new_order", "show_cart"]:
+        if "warenkorb" in input.lower():
+            allowed_outputs.append("show_cart")
 
 # Funktionen für Ausgaben des Bots
-def greetings():
-    """Begrüßung"""
+def find_output(current_state):
+    """Ausgabe herausfinden"""
     global outputs, allowed_outputs, last_output, user_name
-    for dic in outputs["greeting"]:
+    for dic in outputs[current_state]:
         if dic["checked"] == False or dic["multiple"] == True:
-            if dic["name"] in allowed_outputs:
-                dic["checked"] = True
-                last_output = dic["name"]
-                return random.choice(dic["phrases"])
-
-    return "Ich habe keine Antwort für dich, tut mir leid."
-
-def ordering():
-    """Bestellung"""
-    global outputs, allowed_outputs, last_output, user_name
-    for dic in outputs["ordering"]:
-        if dic["checked"] == False:
             if dic["name"] in allowed_outputs:
                 dic["checked"] = True
                 last_output = dic["name"]
@@ -167,19 +162,26 @@ def show_menu():
         menu_output_string += "\n"
     return menu_output_string
 
-def show_last_order(order):
-    pass
+def show_last_order():
+    global last_order, menu
+    output = ""
+    for i in last_order:
+        output += i
+    return output
 
 def show_cart():
     """Zeigt den aktuellen Inhalt des Warenkorbs an."""
-    if not cart:
-        print("Your cart is empty.")
+    global cart
+    if cart == {}:
+        return "Dein Warenkorb ist leider noch leer."
     else:
-        print("Your cart contains:")
-        for item, quantity in cart.items():
-            print(
-                f"{quantity}x {item[0].capitalize() + item[1:]} - {get_item_price(item)}€ each"
-            )
+        output = "\nWarenkorb:\n"
+        price=0
+        for (item, quantity) in cart.items():
+            output += f"{quantity}x {item[0].capitalize() + item[1:]} - {get_item_price(item)}€ pro Stück, {get_item_price(item) * int(quantity)}€ gesamt.\n"
+            price += calculate_total_cart()
+        output += f"Gesamtpreis: {price}€"
+        return output
 
 
 #-----------------------------------------------------------------------------------------------------
@@ -187,6 +189,7 @@ def analyse_order_and_add_to_cart(input):
     """Prüft in einem Text, ob etwas bestellt worden ist, und fügt ggf. mit add_to_cart() zum Warenkorb hinzu."""
     global valid_order, last_order
     did_order = False
+    input = input.replace('x',' ')
     text_list = input.split()
     for i in range(len(text_list)):
         if text_list[i].lower() not in valid_order:
@@ -196,8 +199,9 @@ def analyse_order_and_add_to_cart(input):
         text_list[i] = text_list[i].replace(' ', '')
 
     currindex=-1
-    for i in text_list:
+    for index in range(len(text_list)):
         currindex+=1
+        i=text_list[currindex]
         if len(i) == 0:
             del text_list[currindex]
             currindex-=1
@@ -220,6 +224,7 @@ def analyse_order_and_add_to_cart(input):
 def add_to_cart(item, quantity):
     """Fügt einen Artikel in einer bestimmten Menge zum Warenkorb hinzu."""
     global cart, last_order, menu
+    quantity = int(quantity)
     if item in menu['pizzas'] or item in menu['drinks']:
         if item in cart:
             cart[item] += quantity
@@ -246,7 +251,7 @@ def remove_from_cart(item, quantity):
 
 def checkout():
     """Gibt den Gesamtpreis aus und bedankt sich für die Bestellung."""
-    total = calculate_total()
+    total = calculate_total_cart()
     print(f"Your total is {total}€. Thank you for your order!")
 
 
@@ -258,15 +263,17 @@ def handle_order():
 # calc
 def get_item_price(item):
     """Gibt den Preis eines Artikels zurück."""
+    global menu
     if item in menu['pizzas']:
-        return menu['pizzas'][item]
+        return menu['pizzas'][item]['price']
     elif item in menu['drinks']:
-        return menu['drinks'][item]
+        return menu['drinks'][item]['price']
     return 0
 
 
-def calculate_total():
+def calculate_total_cart():
     """Berechnet den Gesamtpreis des Warenkorbs."""
+    global menu, cart
     total = 0
     for item, quantity in cart.items():
         total += get_item_price(item) * quantity
