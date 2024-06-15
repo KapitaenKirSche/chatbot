@@ -68,12 +68,23 @@ outputs = {
         "name" : "new_order",
         "checked" : False,
         "multiple": True,
-        "phrases" : ["Danke für die Aufnahme einer Bestellung _user-name! Folgendes hast du gerade bestellt: \n_show-last-order \nMöchtest du den gesamten Warenkorb ansehen oder bearbeiten, die Speisekarte begutachten, nochmehr bestellen oder bezahlen"]
+        "phrases" : ["Danke für die Aufnahme einer Bestellung _user-name! Folgendes hast du gerade bestellt: \n_show-last-order \nMöchtest du den gesamten Warenkorb ansehen oder bearbeiten, die Speisekarte begutachten, nochmehr bestellen('z.B. 2 mal magherita) oder bezahlen"]
     }, {
         "name" : "show_cart",
         "checked" : False,
         "multiple": True,
-        "phrases" : ["Mit Vergnügen.\n_cart\nMöchtest du den Warenkorb bearbeiten? Du kannst natürlich auch schon bezahlen ('bezahlen') oder nochmehr bestellen."]
+        "phrases" : ["Mit Vergnügen.\n_cart\nMöchtest du den Warenkorb bearbeiten? Du kannst natürlich auch schon bezahlen ('bezahlen'), nochmehr bestellen ('z.B. 2xCola) oder die Speisekarte anschauen."]
+    }, {
+        "name" : "warenkorb_bearbeiten",
+        "checked" : False,
+        "multiple": True,
+        "phrases" : ["Natürlich.\n_edit-cart"]
+    }],
+    "checkout" : [{
+        "name" : "checkout_default",
+        "checked" : False,
+        "multiple": False,
+        "phrases" : ["ende"]
     }],
 
     "end_cancel" : [{
@@ -120,7 +131,7 @@ def process_input_greeting(input):
 def process_input_ordering(input):
     global dialogue_state, user_name, last_output, allowed_outputs
     allowed_outputs = []
-    if last_output in ["ordering_default", "show_menu"]:
+    if last_output in ["ordering_default", "show_menu", "new_order","show_cart"]:
         if analyse_order_and_add_to_cart(input):
             allowed_outputs.append("new_order")
     if last_output == "ordering_default":
@@ -128,7 +139,14 @@ def process_input_ordering(input):
             allowed_outputs.append("show_menu")
 
     elif last_output in ["new_order", "show_cart"]:
-        if "warenkorb" in input.lower():
+        if "bezahl" in input.lower():
+            dialogue_state = "checkout"
+            allowed_outputs.append("checkout_default")
+        elif "speisekarte" in input.lower():
+            allowed_outputs.append("show_menu")
+        elif "bearbeit" in input.lower():
+            allowed_outputs.append("warenkorb_bearbeiten")
+        elif "warenkorb" in input.lower():
             allowed_outputs.append("show_cart")
 
 # Funktionen für Ausgaben des Bots
@@ -175,7 +193,7 @@ def show_cart():
     if cart == {}:
         return "Dein Warenkorb ist leider noch leer."
     else:
-        output = "\nWarenkorb:\n"
+        output = "Warenkorb:\n"
         price=0
         for (item, quantity) in cart.items():
             output += f"{quantity}x {item[0].capitalize() + item[1:]} - {get_item_price(item)}€ pro Stück, {get_item_price(item) * int(quantity)}€ gesamt.\n"
@@ -183,6 +201,17 @@ def show_cart():
         output += f"Gesamtpreis: {price}€"
         return output
 
+def show_edit_cart():
+    """Zeigt den bearbeitungsmodus des Warenkorbs an."""
+    global cart
+    output = "Warenkorb:\n"
+    price = 0
+    i=1
+    for (item, quantity) in cart.items():
+        output += f"{i}. {quantity}x {item[0].capitalize() + item[1:]}\n"
+        price += calculate_total_cart()
+    output += f"Wenn du eine bestimmte Sache bearbeiten willst, schreibe die Nummer. "
+    return output
 
 #-----------------------------------------------------------------------------------------------------
 def analyse_order_and_add_to_cart(input):
@@ -221,6 +250,7 @@ def analyse_order_and_add_to_cart(input):
     return did_order
 
 
+
 def add_to_cart(item, quantity):
     """Fügt einen Artikel in einer bestimmten Menge zum Warenkorb hinzu."""
     global cart, last_order, menu
@@ -253,11 +283,6 @@ def checkout():
     """Gibt den Gesamtpreis aus und bedankt sich für die Bestellung."""
     total = calculate_total_cart()
     print(f"Your total is {total}€. Thank you for your order!")
-
-
-def handle_order():
-    """Platzhalter für Funktion zur Bearbeitung der Bestellung."""
-    pass
 
 
 # calc
@@ -304,7 +329,8 @@ def replace_vars(text):
                '_pizzeria-name' : PIZZERIA_NAME,
                '_menu' : str(show_menu()),
                '_cart' : str(show_cart()),
-               '_show-last-order':str(show_last_order())}
+               '_show-last-order':str(show_last_order()),
+               '_edit-cart':str(show_edit_cart())}
 
     for condition in replace:
         text = text.replace(condition, replace[condition])
