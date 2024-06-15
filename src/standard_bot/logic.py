@@ -2,7 +2,7 @@ import random
 
 #Data
 words_accept = ['ja', 'auf jeden fall', 'j', 'klar']
-words_decline = ['nein', 'ne', 'nicht', 'auf keinen fall']
+words_decline = ['nein', 'ne', 'nicht', 'nichts', 'auf keinen fall']
 
 # Consts
 PIZZERIA_NAME = "Krustenkrach"
@@ -18,37 +18,50 @@ last_output = ""
 # Menü mit Pizzen und Getränken
 menu = {
     'pizzas': {
-        'margherita': 8.50,
-        'salami': 9.00,
-        'hawaii': 9.50,
-        'veggie': 8.00
+        'margherita': {'price': 8.50, 'ingredients': ['Käse']},
+        'salami': {'price': 9.00, 'ingredients': ['Salami']},
+        'hawaii': {'price': 9.50, 'ingredients': ['Schinken', 'Ananas']},
+        'veggie': {'price': 8.00, 'ingredients': ['Paprika', 'Pilze', 'Zwiebeln']}
     },
     'drinks': {
-        'cola': 2.50,
-        'wasser': 1.50,
-        'bier': 3.00
+        'cola': {'price':2.50},
+        'wasser': {'price':1.50},
+        'bier': {'price':3.00}
     }
 }
 
 # Der Bot muss für jeden Teil bestimmte Sachen schreiben, erst dann kann mit dem Programm weitergegangen werden.
 outputs = {
     "greeting": [{
-        "name":
-            "welcome",
-        "checked":
-            False,
-        "phrases": [
-            f"Hallo und willkommen bei der Pizzeria _pizzeria-name! Was kann ich für sie tun?"
-        ]
+        "name": "welcome",
+        "checked": False,
+        "phrases": [f"Hallo und willkommen bei der Pizzeria _pizzeria-name! Was kann ich für sie tun?"
+                    ]
     }, {
         "name": "name_q",
         "checked": False,
         "phrases": ["Okay. Was ist denn dein Name?", "Sehr gut. Aber wie heißt du eigentlich?"]
     }, {
-        "name": 'order_q',
+        "name": 'order_general_q',
         "checked": False,
-        "phrases": [f"Freut mich _user_name. Möchtest du etwas bestellen?"]
+        "phrases": [f"Freut mich _user-name. Möchtest du etwas bestellen?"]
 
+    }],
+
+    "ordering" : [{
+        "name" : "ordering_default",
+        "checked" : False,
+        "phrases" : ["Sehr schön. Um die Speisekarte zu sehen schreibe einfach 'Speisekarte'. Du kannst natürlich auch sofort bestellen (bspw. 3x Margeherita"]
+    }, {
+        "name" : "show_menu",
+        "checked" : False,
+        "phrases" : ["_menu"]
+    }],
+
+    "end_cancel" : [{
+        "name" : "end",
+        "checked" : False,
+        "phrases" : ["Schade. Ich wünsche dir noch einen schönen Tag _user-name, vielleicht möchtest du ja doch nochmal in Zukunft hier bestellen."]
     }]
 }
 
@@ -59,8 +72,12 @@ cart = {}
 # Funktionen für das verarbeiten des inputs basierend auf dem Status der Unterhaltung
 def process_input(input):
     global dialogue_state
+
     if dialogue_state == "greeting":
         process_input_greeting(input)
+    elif dialogue_state == "ordering":
+        process_input_ordering(input)
+
 
 
 def process_input_greeting(input):
@@ -68,10 +85,22 @@ def process_input_greeting(input):
     allowed_outputs = []
     if last_output == "welcome":
         allowed_outputs.append("name_q")
-
     elif last_output == "name_q":  # Gerade eben nach Name gefragt
         user_name = input
-        allowed_outputs.append("order_q")
+        allowed_outputs.append("order_general_q")
+    elif last_output == "order_general_q":
+        if did_accept(input):
+            dialogue_state = "ordering"
+            allowed_outputs.append("ordering_default")
+        elif did_decline(input):
+            dialogue_state = "end_cancel"
+            allowed_outputs.append("end")
+
+
+
+def process_input_ordering(input):
+    global dialogue_state, user_name, last_output, allowed_outputs
+
 
 
 # Funktionen für Ausgaben des Bots
@@ -87,16 +116,34 @@ def greetings():
 
     return "Ich habe keine Antwort für Sie, tut mir leid."
 
+def ordering():
+    """Bestellung"""
+    global outputs, allowed_outputs, last_output, user_name
+    for dic in outputs["ordering"]:
+        if dic["checked"] == False:
+            if dic["name"] in allowed_outputs:
+                dic["checked"] = True
+                last_output = dic["name"]
+                return random.choice(dic["phrases"])
+
+    return "Ich habe keine Antwort für Sie, tut mir leid."
+
+
+
+
 
 def show_menu():
     """Zeigt das Menü mit Pizzen und Getränken an."""
-    print("Pizzen:")
-    for (pizza, price) in menu['pizzas'].items():
-        print(f"{pizza[0].capitalize() + pizza[1:]}: {price}€")
-    print("\nDrinks:")
-    for drink, price in menu['drinks'].items():
-        print(f"{drink[0].capitalize() + drink[1:]}: {price}€")
+    menu_output_string = ""
 
+    menu_output_string += "Pizzen:"
+    for (pizza, attributes) in menu['pizzas'].items():
+        menu_output_string += f"{pizza[0].capitalize() + pizza[1:]}: {attributes['price']}€"
+
+    menu_output_string += ("\nGetränke:")
+    for (drink, attributes) in menu['drinks'].items():
+        menu_output_string += f"{drink[0].capitalize() + drink[1:]}: {attributes['price']}€"
+    return menu_output_string
 
 def add_to_cart(item, quantity):
     """Fügt einen Artikel in einer bestimmten Menge zum Warenkorb hinzu."""
@@ -166,13 +213,31 @@ def calculate_total():
     return total
 
 
+#--------------------------
+def did_accept(input):
+    global words_accept
+    for phrase in words_accept:
+        if phrase in input.lower():
+            return True
+    return False
+
+def did_decline(input):
+    global words_decline
+    for phrase in words_decline:
+        if phrase in input.lower():
+            return True
+    return False
+
+
+
 def replace_vars(text):
     """Ersetzt Variablen im Text durch den entsprechenden Wert."""
     global user_name, PIZZERIA_NAME
-    replace = {'_user_name' : user_name,
-               '_pizzeria-name' : PIZZERIA_NAME}
+    replace = {'_user-name' : user_name,
+               '_pizzeria-name' : PIZZERIA_NAME,
+               '_menu' : str(show_menu())}
 
-    for (condition, new) in replace:
-        text = text.replace(condition, new)
+    for condition in replace:
+        text = text.replace(condition, replace[condition])
 
     return text

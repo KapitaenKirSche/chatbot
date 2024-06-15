@@ -10,6 +10,8 @@ def main():
 
     if bot.dialogue_state == "greeting":
         return_text = bot.greetings()
+    elif bot.dialogue_state == "ordering":
+        return_text = bot.ordering()
 
     print(bot.replace_vars(return_text))
     bot.user_input = input()
