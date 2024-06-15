@@ -39,13 +39,8 @@ outputs = {
         "name": "welcome",
         "checked": False,
         "multiple" : False,
-        "phrases": [f"Hallo und willkommen bei der Pizzeria _pizzeria-name! Was kann ich für sie tun?"
+        "phrases": [f"Hallo und willkommen bei der Pizzeria _pizzeria-name! Wie darf ich Sie nennen?"
                     ]
-    }, {
-        "name": "name_q",
-        "checked": False,
-        "multiple" : False,
-        "phrases": ["Okay. Was ist denn dein Name?", "Sehr gut. Aber wie heißt du eigentlich?"]
     }, {
         "name": 'order_general_q',
         "checked": False,
@@ -75,6 +70,11 @@ outputs = {
         "multiple": True,
         "phrases" : ["Mit Vergnügen.\n_cart\nMöchtest du den Warenkorb bearbeiten? Du kannst natürlich auch schon bezahlen ('bezahlen'), nochmehr bestellen ('z.B. 2xCola) oder die Speisekarte anschauen."]
     }, {
+        "name" : "warenkorb_bearbeiten_innit",
+        "checked" : False,
+        "multiple": True,
+        "phrases" : ["Natürlich.\n_edit-cart"]
+    }, {
         "name" : "warenkorb_bearbeiten",
         "checked" : False,
         "multiple": True,
@@ -97,6 +97,7 @@ outputs = {
 
 # Warenkorb initialisieren
 cart = {}
+ordered_cart=[]
 last_order = []
 
 # Funktionen für das verarbeiten des inputs basierend auf dem Status der Unterhaltung
@@ -113,9 +114,7 @@ def process_input(input):
 def process_input_greeting(input):
     global dialogue_state, user_name, last_output, allowed_outputs
     allowed_outputs = []
-    if last_output == "welcome":
-        allowed_outputs.append("name_q")
-    elif last_output == "name_q":  # Gerade eben nach Name gefragt
+    if last_output == "welcome":  # Gerade eben nach Name gefragt
         user_name = input
         allowed_outputs.append("order_general_q")
     elif last_output == "order_general_q":
@@ -137,7 +136,8 @@ def process_input_ordering(input):
     if last_output == "ordering_default":
         if "speisekarte" in input.lower():
             allowed_outputs.append("show_menu")
-
+    elif last_output == "warenkorb_bearbeiten_innit" or last_output == " warenkorb_bearbeiten":
+        allowed_outputs.append("warenkorb_bearbeiten")
     elif last_output in ["new_order", "show_cart"]:
         if "bezahl" in input.lower():
             dialogue_state = "checkout"
@@ -145,7 +145,7 @@ def process_input_ordering(input):
         elif "speisekarte" in input.lower():
             allowed_outputs.append("show_menu")
         elif "bearbeit" in input.lower():
-            allowed_outputs.append("warenkorb_bearbeiten")
+            allowed_outputs.append("warenkorb_bearbeiten_innit")
         elif "warenkorb" in input.lower():
             allowed_outputs.append("show_cart")
 
@@ -203,14 +203,16 @@ def show_cart():
 
 def show_edit_cart():
     """Zeigt den bearbeitungsmodus des Warenkorbs an."""
-    global cart
+    global cart, ordered_cart
+    ordered_cart=[]
     output = "Warenkorb:\n"
     price = 0
     i=1
     for (item, quantity) in cart.items():
+        ordered_cart.append((item, quantity))
         output += f"{i}. {quantity}x {item[0].capitalize() + item[1:]}\n"
         price += calculate_total_cart()
-    output += f"Wenn du eine bestimmte Sache bearbeiten willst, schreibe die Nummer. "
+    output += f"Wenn du eine bestimmte Sache bearbeiten willst, schreibe die Nummer und einen Punkt 'bschw. 3.'. Um zu löschen schreibe zum Beispiel '5x 2. löschen'."
     return output
 
 #-----------------------------------------------------------------------------------------------------
@@ -249,8 +251,6 @@ def analyse_order_and_add_to_cart(input):
                 add_to_cart(text_list[i].lower(), 1)
     return did_order
 
-
-
 def add_to_cart(item, quantity):
     """Fügt einen Artikel in einer bestimmten Menge zum Warenkorb hinzu."""
     global cart, last_order, menu
@@ -261,6 +261,23 @@ def add_to_cart(item, quantity):
         else:
             cart[item] = quantity
         last_order.append(f"{quantity}x {item}\n")
+
+
+def analyse_edit_cart(input):
+    """"""
+    global ordered_cart
+    input = input.lower()
+    text = input.split()
+    nummer=0
+
+
+    for word in text:
+        if "." in word:
+            nummer = int(word.replace(".", ""))
+
+    if "löschen" in text:
+        pass
+
 
 def remove_from_cart(item, quantity):
     """Entfernt einen Artikel in einer bestimmten Menge aus dem Warenkorb."""
