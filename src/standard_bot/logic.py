@@ -2,6 +2,7 @@ import random
 
 # Consts
 PIZZERIA_NAME = "Krustenkrach"
+PIZZERIA_ADRESS = "Adenauerallee 50, 53332 Bornheim"
 sales_big_order = [(50, 0.05), (100, 0.1), (200, 0, 2)]
 words_number_replace = {
     'eins': 1,
@@ -35,6 +36,7 @@ running = True
 dialogue_state = "greeting"
 user_input = "_init"
 user_name = "Ingo Knito"
+adress = ''
 
 allowed_outputs = ["welcome"]
 last_output = ""
@@ -49,8 +51,8 @@ cart = {}
 ordered_cart = []
 
 # Data
-words_accept = ['ja', 'auf jeden fall', 'j', 'klar']
-words_decline = ['nein', 'ne', 'nicht', 'nichts', 'auf keinen fall']
+words_accept = ['ja', 'auf jeden fall', 'j', 'klar', 'yes', 'y']
+words_decline = ['nein', 'ne', 'no', 'n', 'nicht', 'nichts', 'auf keinen fall']
 
 # Menü mit Pizzen und Getränken
 menu = {
@@ -136,12 +138,12 @@ outputs = {
         "checked": False,
         "multiple": True,
         "phrases": [
-            "Mit Vergnügen.\n_cart\nMöchtest du den Warenkorb bearbeiten? Du kannst natürlich auch schon bezahlen ('bezahlen'), nochmehr bestellen ('z.B. 2xCola) oder die Speisekarte anschauen."]
+            "Gerne.\nWarenkorb:\n_cart\nMöchtest du den Warenkorb bearbeiten? Du kannst natürlich auch schon bezahlen ('bezahlen'), nochmehr bestellen ('z.B. 2xCola) oder die Speisekarte anschauen."]
     }, {
         "name": "warenkorb_bearbeiten_innit",
         "checked": False,
         "multiple": True,
-        "phrases": ["Natürlich.\n\n_edit-cart"]
+        "phrases": ["Natürlich.\n_edit-cart"]
     }, {
         "name": "warenkorb_bearbeiten",
         "checked": False,
@@ -153,8 +155,18 @@ outputs = {
     "checkout": [{
         "name": "checkout_default",
         "checked": False,
-        "multiple": False,
-        "phrases": ["Möchtest du wirklich die Bestellung beenden?\n_cart\n\n_rabatt-berechnen"]
+        "multiple": True,
+        "phrases": ["Deine Bestellung:\n_cart\n\n_rabatt-berechnen\n\nMöchtest du die Bestellung beenden?"]
+    }, {
+        "name": "adresse_q",
+        "checked": False,
+        "multiple": True,
+        "phrases": ["Sehr schön. Dann verrat mir doch bitte noch deine Adresse, damit wir dorthin liefern können. Unsere Pizzeria befindet sich an der _pizzeria-adress"]
+    }, {
+        "name": "checkout_summary",
+        "checked": False,
+        "multiple": True,
+        "phrases": ["Okay _user-name. Wir liefern in 30 Minuten deine Bestellung an die Adresse '_user-adress'. \nDeine Bestellung:\n_cart\n\nDer gesamt Preis beträgt Nach Rabatten _gesamt-price-after-sale, bis gleich."]
     }],
 
     "end_cancel": [{
@@ -179,6 +191,8 @@ def process_input(input):
         process_input_greeting(input)
     elif dialogue_state == "ordering":
         process_input_ordering(input)
+    elif dialogue_state == "checkout":
+        process_input_checkout(input)
 
 
 def process_input_greeting(input):
@@ -230,11 +244,26 @@ def process_input_ordering(input):
             allowed_outputs.append("show_cart")
 
         if last_output == "warenkorb_bearbeiten_innit" or last_output == "warenkorb_bearbeiten":
-            if input.lower() in ["abbrechen", "abbruch", "stop"]:
+            if input.lower() in ["abbrechen", "abbruch", "stop"] or "bestell" in input.lower():
                 allowed_outputs.append("ordering_default")
             else:
                 edit_cart_response = analyse_edit_cart(input)
                 allowed_outputs.append("warenkorb_bearbeiten")
+
+
+def process_input_checkout(input):
+    global dialogue_state, user_name, last_output, allowed_outputs, running, adress
+    allowed_outputs = []
+
+    if last_output == 'name':
+        if did_accept(input):
+            allowed_outputs.append('adresse_q')
+        elif did_decline(input):
+            dialogue_state = 'ordering'
+            allowed_outputs.append('ordering_default')
+    elif last_output == 'adresse_q':
+        allowed_outputs.append('checkout_summary')
+
 
 
 # Funktionen für Ausgaben des Bots
@@ -248,6 +277,11 @@ def find_output(current_state):
                 dic["checked"] = True
                 last_output = dic["name"]
                 return random.choice(dic["phrases"])
+
+    for state in outputs:
+        if last_output in state:
+            if 'default' in state[last_output]:
+                return state[last_output]['default']
 
     return "Ich habe keine Antwort für dich, tut mir leid."
 
@@ -291,7 +325,7 @@ def show_cart():
     if cart == {}:
         return "Dein Warenkorb ist leider noch leer."
     else:
-        output = "Warenkorb:\n"
+        output = ""
         price = 0
         for (item, quantity) in cart.items():
             output += f"{quantity}x {item[0].capitalize() + item[1:]} - {get_item_price(item):.2f}€ pro Stück, {get_item_price(item) * int(quantity):.2f}€ gesamt.\n"
@@ -315,6 +349,20 @@ def show_edit_cart():
     output += f"Wenn du eine bestimmte Sache bearbeiten willst, schreibe die Nummer und einen Punkt 'bschw. 3.'. Um zu löschen schreibe zum Beispiel '5x 2. löschen'."
     return output
 
+def show_calculate_sale():
+    """Formuliert den Preis des gesamten Warenkorbs nach Rabatten"""
+    global menu, cart, sales_big_order
+    output = ""
+    total = calculate_total_cart()
+    sale = calculate_sale()
+    sale_factor = sale[1]
+    sale_checkpoint = [0]
+
+    output = f"Der Gesamtwert deines Warenkorbs beträgt {total:.2f}€."
+    if sale_factor != 0:
+        output += f"Da dies über {sale_checkpoint:.2f}€ liegt bekommmst du einen Rabatt von {sale_factor * 100:.0f}%." \
+                  f"\nDein zu zahlender Gesamtpreis beträgt also {(1 - sale_factor) * total:.2f}€"
+    return output
 
 # -----------------------------------------------------------------------------------------------------
 def analyse_order_and_add_to_cart(input):
@@ -322,6 +370,7 @@ def analyse_order_and_add_to_cart(input):
     global valid_order, last_order, words_number_replace
     did_order = False
     input = input.replace('x', ' ')
+    input = input.replace('mal', ' ')
     text_list = input.split()
     for i in range(len(text_list)):
         if text_list[i].lower() in words_number_replace:
@@ -383,7 +432,7 @@ def analyse_edit_cart(input):
         word = text[i]
         if word.lower() in words_number_replace:
             text[i] = str(words_number_replace[word])
-            print(text)
+            word = str(words_number_replace[word])
         if word[-1] == ".":
             is_number = True
             for letter in word[:-1]:
@@ -480,9 +529,9 @@ def calculate_total_cart():
 
 
 def calculate_sale():
-    """Formuliert den Preis des gesamten Warenkorbs nach Rabatten"""
+    """Errechnet den Preis nach sale."""
     global menu, cart, sales_big_order
-    output = ""
+
     total = calculate_total_cart()
     sale_factor = 0
     sale_checkpoint = 0
@@ -490,11 +539,7 @@ def calculate_sale():
         if total >= i[0]:
             sale_factor = i[1]
             sale_checkpoint = i[0]
-    output = f"Der Gesamtwert deines Warenkorbs beträgt {total:.2f}€." f"Da dies über {sale_checkpoint:.2f}€ liegt bekommmst du einen Rabatt von {sale_factor * 100:.0f}%." \
-             f"\nDein zu zahlender Gesamtpreis beträgt also {(1 - sale_factor) * total:.2f}€"
-    if sale_factor != 0:
-        output += f"Da dies über {sale_checkpoint:.2f}€ liegt bekommmst du einen Rabatt von {sale_factor * 100:.0f}%." \
-                  f"\nDein zu zahlender Gesamtpreis beträgt also {(1 - sale_factor) * total:.2f}€"
+    output = [sale_checkpoint, (sale_factor), ((1 - sale_factor) * total)]
     return output
 
 
@@ -521,7 +566,7 @@ def capitalize_first(text):
 
 def replace_vars(text):
     """Ersetzt Variablen im Text durch den entsprechenden Wert."""
-    global user_name, PIZZERIA_NAME, edit_cart_response
+    global user_name, PIZZERIA_NAME, edit_cart_response, PIZZERIA_ADRESS, adress
     replace = {'_user-name': user_name,
                '_pizzeria-name': PIZZERIA_NAME,
                '_menu': str(show_menu()),
@@ -529,7 +574,10 @@ def replace_vars(text):
                '_show-last-order': str(show_last_order()),
                '_analyse-edit-cart': edit_cart_response,
                '_edit-cart': str(show_edit_cart()),
-               '_rabatt-berechnen': str(calculate_sale())
+               '_rabatt-berechnen': str(show_calculate_sale()),
+               '_pizzeria-adress' : PIZZERIA_ADRESS,
+               '_user-adress' : adress,
+               '_gesamt-price-after-sale' : calculate_sale()[-1]
                }
 
     for condition in replace:
