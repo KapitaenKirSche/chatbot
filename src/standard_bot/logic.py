@@ -1,13 +1,10 @@
 import random
 
-#Data
-words_accept = ['ja', 'auf jeden fall', 'j', 'klar']
-words_decline = ['nein', 'ne', 'nicht', 'nichts', 'auf keinen fall']
-
-# Consts
+#Consts
 PIZZERIA_NAME = "Krustenkrach"
+sales = [(50,)]
 
-# Variabels
+#Variables
 running = True
 dialogue_state = "greeting"
 user_input = "_init"
@@ -17,6 +14,21 @@ allowed_outputs = ["welcome"]
 last_output = ""
 
 edit_cart_response = ""
+
+last_order = []
+valid_order = []
+for a in menu:
+    for b in menu[a]:
+        valid_order.append(b)
+
+# Warenkorb initialisieren
+cart = {}
+ordered_cart = []
+
+# Data
+words_accept = ['ja', 'auf jeden fall', 'j', 'klar']
+words_decline = ['nein', 'ne', 'nicht', 'nichts', 'auf keinen fall']
+
 # Menü mit Pizzen und Getränken
 menu = {
     'pizzas': {
@@ -55,16 +67,12 @@ menu = {
     }
 }
 
-valid_order = []
-for a in menu:
-    for b in menu[a]:
-        valid_order.append(b)
 # Der Bot muss für jeden Teil bestimmte Sachen schreiben, erst dann kann mit dem Programm weitergegangen werden.
 outputs = {
     "greeting": [{
         "name": "welcome",
         "checked": False,
-        "multiple" : False,
+        "multiple": False,
         "phrases": [f"Hallo und willkommen bei der Pizzeria _pizzeria-name! Wie darf ich Sie nennen?"
                     ]
     }, {
@@ -75,61 +83,63 @@ outputs = {
 
     }],
 
-    "ordering" : [{
-        "name" : "ordering_innit",
-        "checked" : False,
+    "ordering": [{
+        "name": "ordering_innit",
+        "checked": False,
         "multiple": False,
-        "phrases" : ["Sehr schön. Um die Speisekarte zu sehen schreibe einfach 'Speisekarte'. Du kannst natürlich auch sofort bestellen (bspw. '3x Margherita und 2mal eine cola')"]
+        "phrases": [
+            "Sehr schön. Um die Speisekarte zu sehen schreibe einfach 'Speisekarte'. Du kannst natürlich auch sofort bestellen (bspw. '3x Margherita und 2mal eine cola')"]
     }, {
-        "name" : "ordering_default",
-        "checked" : False,
+        "name": "ordering_default",
+        "checked": False,
         "multiple": True,
-        "phrases" : ["Um die Speisekarte zu sehen schreibe einfach 'Speisekarte'. Du kannst natürlich auch sofort bestellen (bspw. '3x Margherita und 2mal eine cola'), den Warenkorb anschauen & bearbeiten oder schon bezahlen."]
+        "phrases": [
+            "Um die Speisekarte zu sehen schreibe einfach 'Speisekarte'. Du kannst natürlich auch sofort bestellen (bspw. '3x Margherita und 2mal eine cola'), den Warenkorb anschauen & bearbeiten oder schon bezahlen."]
     }, {
-        "name" : "show_menu",
-        "checked" : False,
+        "name": "show_menu",
+        "checked": False,
         "multiple": True,
-        "phrases" : ["Natürlich.\n_menu"]
+        "phrases": ["Natürlich.\n_menu"]
     }, {
-        "name" : "new_order",
-        "checked" : False,
+        "name": "new_order",
+        "checked": False,
         "multiple": True,
-        "phrases" : ["Danke für die Aufnahme einer Bestellung _user-name! Folgendes hast du gerade bestellt: \n_show-last-order \nMöchtest du den gesamten Warenkorb ansehen oder bearbeiten, die Speisekarte begutachten, nochmehr bestellen('z.B. 2 mal magherita) oder bezahlen?"]
+        "phrases": [
+            "Danke für die Aufnahme einer Bestellung _user-name! Folgendes hast du gerade bestellt: \n_show-last-order \nMöchtest du den gesamten Warenkorb ansehen oder bearbeiten, die Speisekarte begutachten, nochmehr bestellen('z.B. 2 mal magherita) oder bezahlen?"]
     }, {
-        "name" : "show_cart",
-        "checked" : False,
+        "name": "show_cart",
+        "checked": False,
         "multiple": True,
-        "phrases" : ["Mit Vergnügen.\n_cart\nMöchtest du den Warenkorb bearbeiten? Du kannst natürlich auch schon bezahlen ('bezahlen'), nochmehr bestellen ('z.B. 2xCola) oder die Speisekarte anschauen."]
+        "phrases": [
+            "Mit Vergnügen.\n_cart\nMöchtest du den Warenkorb bearbeiten? Du kannst natürlich auch schon bezahlen ('bezahlen'), nochmehr bestellen ('z.B. 2xCola) oder die Speisekarte anschauen."]
     }, {
-        "name" : "warenkorb_bearbeiten_innit",
-        "checked" : False,
+        "name": "warenkorb_bearbeiten_innit",
+        "checked": False,
         "multiple": True,
-        "phrases" : ["Natürlich.\n\n_edit-cart"]
+        "phrases": ["Natürlich.\n\n_edit-cart"]
     }, {
-        "name" : "warenkorb_bearbeiten",
-        "checked" : False,
+        "name": "warenkorb_bearbeiten",
+        "checked": False,
         "multiple": True,
-        "phrases" : ["_analyse-edit-cart\n\n_edit-cart\nWenn du den Warenkorb nicht mehr bearbeiten möchtest, schreibe einfach 'abbbrechen'."]
+        "phrases": [
+            "_analyse-edit-cart\n\n_edit-cart\nWenn du den Warenkorb nicht mehr bearbeiten möchtest, schreibe einfach 'abbbrechen'."]
     }],
-    "checkout" : [{
-        "name" : "checkout_default",
-        "checked" : False,
+    "checkout": [{
+        "name": "checkout_default",
+        "checked": False,
         "multiple": False,
-        "phrases" : ["ende"]
+        "phrases": ["Möchtest du wirklich die Bestellung beenden?\n_cart\n\n_rabatt-berechnen"]
     }],
 
-    "end_cancel" : [{
-        "name" : "end",
-        "checked" : False,
+    "end_cancel": [{
+        "name": "end",
+        "checked": False,
         "multiple": False,
-        "phrases" : ["Schade. Ich wünsche dir noch einen schönen Tag _user-name, vielleicht möchtest du ja doch nochmal in Zukunft hier bestellen."]
+        "phrases": [
+            "Schade. Ich wünsche dir noch einen schönen Tag _user-name, vielleicht möchtest du ja doch nochmal in Zukunft hier bestellen."]
     }]
 }
 
-# Warenkorb initialisieren
-cart = {}
-ordered_cart=[]
-last_order = []
 
 # Funktionen für das verarbeiten des inputs basierend auf dem Status der Unterhaltung
 def process_input(input):
@@ -141,9 +151,8 @@ def process_input(input):
         process_input_ordering(input)
 
 
-
 def process_input_greeting(input):
-    global dialogue_state, user_name, last_output, allowed_outputs
+    global dialogue_state, user_name, last_output, allowed_outputs, running
     allowed_outputs = []
 
     if last_output == "welcome":  # Gerade eben nach Name gefragt
@@ -156,7 +165,7 @@ def process_input_greeting(input):
         elif did_decline(input):
             dialogue_state = "end_cancel"
             allowed_outputs.append("end")
-
+            running = False
 
 
 def process_input_ordering(input):
@@ -164,7 +173,7 @@ def process_input_ordering(input):
 
     edit_cart_response = ""
     allowed_outputs = []
-    if last_output in ["ordering_innit", "ordering_default", "show_menu", "new_order","show_cart"]:
+    if last_output in ["ordering_innit", "ordering_default", "show_menu", "new_order", "show_cart"]:
         if analyse_order_and_add_to_cart(input):
             allowed_outputs.append("new_order")
     if last_output == "ordering_innit":
@@ -190,10 +199,12 @@ def process_input_ordering(input):
         elif "warenkorb" in input.lower():
             allowed_outputs.append("show_cart")
 
+
 # Funktionen für Ausgaben des Bots
 def find_output(current_state):
     """Ausgabe herausfinden"""
-    global outputs, allowed_outputs, last_output, user_name
+    global outputs, allowed_outputs, last_output, user_name, running
+
     for dic in outputs[current_state]:
         if dic["checked"] == False or dic["multiple"] == True:
             if dic["name"] in allowed_outputs:
@@ -203,29 +214,31 @@ def find_output(current_state):
 
     return "Ich habe keine Antwort für dich, tut mir leid."
 
-#-----------------------------------------------------------------
-def show_menu():
+
+# -----------------------------------------------------------------
+def show_menu(with_ingredients=False):
     """Zeigt das Menü mit Pizzen und Getränken an."""
     menu_output_string = ""
 
     menu_output_string += "Pizzen:"
     menu_output_string += "\n"
     for (pizza, attributes) in menu['pizzas'].items():
-        menu_output_string += f"{pizza[0].capitalize() + pizza[1:]}: {attributes['price']}€"
-        menu_output_string+="\n"
+        menu_output_string += f"  {pizza[0].capitalize() + pizza[1:]}: {attributes['price']}€"
+        menu_output_string += "\n"
 
     menu_output_string += ("\nGetränke:")
     for (drink, attributes) in menu['drinks'].items():
-        menu_output_string += f"{drink[0].capitalize() + drink[1:]}: {attributes['price']}€"
+        menu_output_string += f"  {drink[0].capitalize() + drink[1:]}: {attributes['price']}€"
         menu_output_string += "\n"
 
     menu_output_string += ("\nBeilagen:")
     menu_output_string += "\n"
     for (drink, attributes) in menu['sides'].items():
-        menu_output_string += f"{drink[0].capitalize() + drink[1:]}: {attributes['price']}€"
+        menu_output_string += f"  {drink[0].capitalize() + drink[1:]}: {attributes['price']}€"
         menu_output_string += "\n"
 
     return menu_output_string
+
 
 def show_last_order():
     global last_order, menu
@@ -234,6 +247,7 @@ def show_last_order():
         output += i
     return output
 
+
 def show_cart():
     """Zeigt den aktuellen Inhalt des Warenkorbs an."""
     global cart
@@ -241,63 +255,66 @@ def show_cart():
         return "Dein Warenkorb ist leider noch leer."
     else:
         output = "Warenkorb:\n"
-        price=0
+        price = 0
         for (item, quantity) in cart.items():
             output += f"{quantity}x {item[0].capitalize() + item[1:]} - {get_item_price(item)}€ pro Stück, {get_item_price(item) * int(quantity)}€ gesamt.\n"
             price += calculate_total_cart()
         output += f"Gesamtpreis: {price}€"
         return output
 
+
 def show_edit_cart():
     """Zeigt den bearbeitungsmodus des Warenkorbs an."""
     global cart, ordered_cart
-    ordered_cart=[]
+    ordered_cart = []
     output = "Warenkorb:\n"
     price = 0
-    i=0
+    i = 0
     for (item, quantity) in cart.items():
-        i+=1
+        i += 1
         ordered_cart.append((item, quantity))
         output += f"{i}. {quantity}x {item[0].capitalize() + item[1:]}\n"
         price += calculate_total_cart()
     output += f"Wenn du eine bestimmte Sache bearbeiten willst, schreibe die Nummer und einen Punkt 'bschw. 3.'. Um zu löschen schreibe zum Beispiel '5x 2. löschen'."
     return output
 
-#-----------------------------------------------------------------------------------------------------
+
+# -----------------------------------------------------------------------------------------------------
 def analyse_order_and_add_to_cart(input):
     """Prüft in einem Text, ob etwas bestellt worden ist, und fügt ggf. mit add_to_cart() zum Warenkorb hinzu."""
     global valid_order, last_order
     did_order = False
-    input = input.replace('x',' ')
+    input = input.replace('x', ' ')
     text_list = input.split()
     for i in range(len(text_list)):
         if text_list[i].lower() not in valid_order:
             for j in range(len(text_list[i])):
                 if text_list[i][j].isnumeric() == False:
-                    text_list[i]=text_list[i][:j] +' '+ text_list[i][j + 1:]
+                    text_list[i] = text_list[i][:j] + ' ' + text_list[i][j + 1:]
         text_list[i] = text_list[i].replace(' ', '')
 
-    currindex=-1
+    currindex = -1
     for index in range(len(text_list)):
-        currindex+=1
-        i=text_list[currindex]
+        currindex += 1
+        i = text_list[currindex]
         if len(i) == 0:
             del text_list[currindex]
-            currindex-=1
+            currindex -= 1
         elif i.lower() in valid_order:
             did_order = True
 
     if did_order:
-        last_order=[]
+        last_order = []
 
     for i in range(len(text_list)):
         if text_list[i].lower() in valid_order:
             did_order = True
-            if text_list[max(i-1,0)][0].isnumeric():
-                add_to_cart(text_list[i].lower(), text_list[max(i-1,0)])
+            if text_list[max(i - 1, 0)][0].isnumeric():
+                add_to_cart(text_list[i].lower(), text_list[max(i - 1, 0)])
             else:
                 add_to_cart(text_list[i].lower(), 1)
     return did_order
+
 
 def add_to_cart(item, quantity):
     """Fügt einen Artikel in einer bestimmten Menge zum Warenkorb hinzu."""
@@ -317,29 +334,29 @@ def analyse_edit_cart(input):
 
     input = input.lower()
     text = input.split()
-    number=0
-    ints_in_text=[]
+    number = 0
+    ints_in_text = []
     delete = False
 
-    i=-1
+    i = -1
     for k in range(len(text)):
-        i+=1
-        word=text[i]
+        i += 1
+        word = text[i]
         if word[-1] == ".":
-            is_number=True
+            is_number = True
             for letter in word[:-1]:
                 if letter.isnumeric() == False:
-                    is_number=False
+                    is_number = False
             if is_number:
                 number = int(word.replace(".", ""))
                 del text[i]
-                i-=1
+                i -= 1
             else:
                 text[i] = word.replace(".", "")
         else:
             text[i] = word.replace("x", "")
 
-    i=-1
+    i = -1
     for k in range(len(text)):
         i += 1
         word = text[i]
@@ -357,7 +374,7 @@ def analyse_edit_cart(input):
     if number != 0:
         if number <= len(ordered_cart):
             number_valid = True
-            item_in_cart = ordered_cart[number-1][0]
+            item_in_cart = ordered_cart[number - 1][0]
 
     if number == 0:
         return "Tut mir Leid, du musst noch eine Nummer zum bearbeiten eingeben. (z. B. '2. löschen.')"
@@ -366,15 +383,15 @@ def analyse_edit_cart(input):
     elif delete:
         if len(ints_in_text) == 1:
             remove_from_cart(item_in_cart, ints_in_text[0])
-            if ordered_cart[number-1][1] < ints_in_text[0]:
-                return f"Du hast {item_in_cart} nicht {ints_in_text[0]} mal im Warenkorb. {ordered_cart[number-1][1]}x {item_in_cart} ({number}.) gelöscht."
+            if ordered_cart[number - 1][1] < ints_in_text[0]:
+                return f"Du hast {item_in_cart} nicht {ints_in_text[0]} mal im Warenkorb. {ordered_cart[number - 1][1]}x {item_in_cart} ({number}.) gelöscht."
             else:
                 return f"{ints_in_text[0]}x {item_in_cart} ({number}.) gelöscht."
         elif len(ints_in_text) >= 1:
             return f"Ich weiß nicht wie häufig du die Nummer {number}. löschen möchtest. Du hast mehr als eine Zahl geschrieben, versuche noch einmal."
         else:
-            remove_from_cart(item_in_cart, ordered_cart[number-1][1])
-            return f"{ordered_cart[number-1][1]}x {item_in_cart} ({number}.) gelöscht."
+            remove_from_cart(item_in_cart, ordered_cart[number - 1][1])
+            return f"{ordered_cart[number - 1][1]}x {item_in_cart} ({number}.) gelöscht."
     else:
         return "Du musst dazu schreiben, was du mit dem Artikel machen möchtest, versuche noch einmal."
 
@@ -392,7 +409,6 @@ def remove_from_cart(item, quantity):
             del cart[item]
 
 
-
 def checkout():
     """Gibt den Gesamtpreis aus und bedankt sich für die Bestellung."""
     total = calculate_total_cart()
@@ -407,6 +423,8 @@ def get_item_price(item):
         return menu['pizzas'][item]['price']
     elif item in menu['drinks']:
         return menu['drinks'][item]['price']
+    elif item in menu['sides']:
+        return menu['sides'][item]['price']
     return 0
 
 
@@ -419,13 +437,19 @@ def calculate_total_cart():
     return total
 
 
-#--------------------------
+def calculate_sale():
+    """Formuliert den Preis des gesamten Warenkorbs nach Rabatten"""
+    global menu, cart, sales
+
+
+# --------------------------
 def did_accept(input):
     global words_accept
     for phrase in words_accept:
         if phrase in input.lower():
             return True
     return False
+
 
 def did_decline(input):
     global words_decline
@@ -435,17 +459,21 @@ def did_decline(input):
     return False
 
 
+def capitalize_first(text):
+    return text[0].capitalize() + text[1:]
+
 
 def replace_vars(text):
     """Ersetzt Variablen im Text durch den entsprechenden Wert."""
     global user_name, PIZZERIA_NAME, edit_cart_response
-    replace = {'_user-name' : user_name,
-               '_pizzeria-name' : PIZZERIA_NAME,
-               '_menu' : str(show_menu()),
-               '_cart' : str(show_cart()),
-               '_show-last-order':str(show_last_order()),
+    replace = {'_user-name': user_name,
+               '_pizzeria-name': PIZZERIA_NAME,
+               '_menu': str(show_menu()),
+               '_cart': str(show_cart()),
+               '_show-last-order': str(show_last_order()),
                '_analyse-edit-cart': edit_cart_response,
-               '_edit-cart':str(show_edit_cart())
+               '_edit-cart': str(show_edit_cart()),
+               '_rabatt-berechnen': str(calculat_sale())
                }
 
     for condition in replace:

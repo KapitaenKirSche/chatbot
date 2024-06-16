@@ -10,8 +10,11 @@ def main():
 
     return_text = bot.find_output(bot.dialogue_state)
 
+    print("\n")
     print(bot.replace_vars(return_text))
-    bot.user_input = input("\n >> ")
+    if bot.running:
+        print("\n")
+        bot.user_input = input(" >> ")
 
 
 while bot.running:
