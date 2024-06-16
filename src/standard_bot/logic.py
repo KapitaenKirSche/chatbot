@@ -366,7 +366,7 @@ def show_cart():
         price = 0
         for (item, quantity) in cart.items():
             output += f"{quantity}x {item[0].capitalize() + item[1:]} - {get_item_price(item):.2f}€ pro Stück, {get_item_price(item) * int(quantity):.2f}€ gesamt.\n"
-            price += calculate_total_cart()
+        price = calculate_total_cart()
         output += f"Gesamtpreis: {price:.2f}€"
         return output
 
@@ -382,7 +382,7 @@ def show_edit_cart():
         i += 1
         ordered_cart.append((item, quantity))
         output += f"{i}. {quantity}x {item[0].capitalize() + item[1:]}\n"
-        price += calculate_total_cart()
+    price = calculate_total_cart()
     output += f"Wenn du eine bestimmte Sache bearbeiten willst, schreibe die Nummer und einen Punkt 'bschw. 3.'. Um zu löschen schreibe zum Beispiel '5x 2. löschen'."
     return output
 
@@ -580,6 +580,7 @@ def calculate_total_cart():
     total = 0
     for item, quantity in cart.items():
         total += get_item_price(item) * quantity
+    print(total)
     return total
 
 
