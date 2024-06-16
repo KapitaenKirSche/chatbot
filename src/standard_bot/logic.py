@@ -3,7 +3,7 @@ import random
 # Consts
 PIZZERIA_NAME = "Krustenkrach"
 PIZZERIA_ADRESS = "Adenauerallee 50, 53332 Bornheim"
-sales_big_order = [(50, 0.05), (100, 0.1), (200, 0, 2)]
+sales_big_order = [(50, 0.05), (100, 0.1), (200, 0.2)]
 words_number_replace = {
     'eins': 1,
     'zwei': 2,
@@ -42,6 +42,7 @@ allowed_outputs = ["welcome"]
 last_output = ""
 
 edit_cart_response = ""
+total_after_tip = 0
 
 last_order = []
 valid_order = []
@@ -166,7 +167,12 @@ outputs = {
         "name": "checkout_summary",
         "checked": False,
         "multiple": True,
-        "phrases": ["Okay _user-name. Wir liefern in 30 Minuten deine Bestellung an die Adresse '_user-adress'. \nDeine Bestellung:\n_cart\n\nDer gesamt Preis beträgt Nach Rabatten _gesamt-price-after-sale, bis gleich."]
+        "phrases": ["Okay _user-name. Wir liefern in 30 Minuten deine Bestellung an die Adresse '_user-adress'. \nDeine Bestellung:\n_cart\n\nDer Gesamtpreis beträgt Nach Rabatten _gesamt-price-after-sale, bis gleich.\nMöchtest du Trinkgeld geben? Wenn ja schreib doch den Prozentsatz, dann kann ich dir die Summe berechnen"]
+    }, {
+        "name": "checkout_final",
+        "checked": False,
+        "multiple": True,
+        "phrases": ["Vielen Dank für deine Bestellung _user-name. Dein Gesamtpreis nach Trinkgeld beträgt _total-after-tip€, und wir sind in ca. 30 Minuten da. Bis nächstes mal!"]
     }],
 
     "end_cancel": [{
@@ -252,10 +258,11 @@ def process_input_ordering(input):
 
 
 def process_input_checkout(input):
-    global dialogue_state, user_name, last_output, allowed_outputs, running, adress
+    global dialogue_state, user_name, last_output, allowed_outputs, running, adress, total_after_tip
     allowed_outputs = []
+    total_after_tip = 0
 
-    if last_output == 'name':
+    if last_output == 'checkout_default':
         if did_accept(input):
             allowed_outputs.append('adresse_q')
         elif did_decline(input):
@@ -263,6 +270,11 @@ def process_input_checkout(input):
             allowed_outputs.append('ordering_default')
     elif last_output == 'adresse_q':
         allowed_outputs.append('checkout_summary')
+        adress = input
+    elif last_output == 'checkout_summary':
+        allowed_outputs.append('checkout_final')
+        total_after_tip = analyse_and_calc_after_tip(input)
+        running = False
 
 
 
@@ -356,13 +368,15 @@ def show_calculate_sale():
     total = calculate_total_cart()
     sale = calculate_sale()
     sale_factor = sale[1]
-    sale_checkpoint = [0]
+    sale_checkpoint = sale[0]
 
-    output = f"Der Gesamtwert deines Warenkorbs beträgt {total:.2f}€."
+    output = f"Der Gesamtwert deines Warenkorbs beträgt {total:.2f}€. "
     if sale_factor != 0:
         output += f"Da dies über {sale_checkpoint:.2f}€ liegt bekommmst du einen Rabatt von {sale_factor * 100:.0f}%." \
                   f"\nDein zu zahlender Gesamtpreis beträgt also {(1 - sale_factor) * total:.2f}€"
     return output
+
+
 
 # -----------------------------------------------------------------------------------------------------
 def analyse_order_and_add_to_cart(input):
@@ -500,10 +514,26 @@ def remove_from_cart(item, quantity):
             del cart[item]
 
 
-def checkout():
-    """Gibt den Gesamtpreis aus und bedankt sich für die Bestellung."""
-    total = calculate_total_cart()
-    print(f"Your total is {total:.2f}€. Thank you for your order!")
+def analyse_and_calc_after_tip(input):
+    '''Analysiert den input, ob ein Trinkgeld gegeben wurde, und gibt den gesamtpreis aus.'''
+
+    total = calculate_sale()[-1]
+    if did_decline(input): #kein tip
+        return total
+    input = input.replace('%', ' ')
+    input = input.split()
+
+    for word in input:
+        isnumb = True
+        for numb in word:
+            if numb.isnumeric() == False:
+                isnumb = False
+        if isnumb:
+            if int(numb) > 1:
+                return (1 + int(numb)/100) * total
+            else:
+                return (1 + int(numb) / 100) * total
+    return total
 
 
 # calc
@@ -566,7 +596,7 @@ def capitalize_first(text):
 
 def replace_vars(text):
     """Ersetzt Variablen im Text durch den entsprechenden Wert."""
-    global user_name, PIZZERIA_NAME, edit_cart_response, PIZZERIA_ADRESS, adress
+    global user_name, PIZZERIA_NAME, edit_cart_response, PIZZERIA_ADRESS, adress, total_after_tip
     replace = {'_user-name': user_name,
                '_pizzeria-name': PIZZERIA_NAME,
                '_menu': str(show_menu()),
@@ -577,7 +607,8 @@ def replace_vars(text):
                '_rabatt-berechnen': str(show_calculate_sale()),
                '_pizzeria-adress' : PIZZERIA_ADRESS,
                '_user-adress' : adress,
-               '_gesamt-price-after-sale' : calculate_sale()[-1]
+               '_gesamt-price-after-sale' : str(calculate_sale()[-1]),
+               '_total-after-tip' : str(total_after_tip)
                }
 
     for condition in replace:
