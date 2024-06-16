@@ -2,7 +2,7 @@ import random
 
 #Consts
 PIZZERIA_NAME = "Krustenkrach"
-sales = [(50,)]
+sales_big_order = [(50,0.05), (100, 0.1), (200, 0,2)]
 
 #Variables
 running = True
@@ -17,9 +17,6 @@ edit_cart_response = ""
 
 last_order = []
 valid_order = []
-for a in menu:
-    for b in menu[a]:
-        valid_order.append(b)
 
 # Warenkorb initialisieren
 cart = {}
@@ -139,6 +136,10 @@ outputs = {
             "Schade. Ich wünsche dir noch einen schönen Tag _user-name, vielleicht möchtest du ja doch nochmal in Zukunft hier bestellen."]
     }]
 }
+
+for a in menu:
+    for b in menu[a]:
+        valid_order.append(b)
 
 
 # Funktionen für das verarbeiten des inputs basierend auf dem Status der Unterhaltung
@@ -320,7 +321,7 @@ def add_to_cart(item, quantity):
     """Fügt einen Artikel in einer bestimmten Menge zum Warenkorb hinzu."""
     global cart, last_order, menu
     quantity = int(quantity)
-    if item in menu['pizzas'] or item in menu['drinks']:
+    if item in menu['pizzas'] or item in menu['drinks'] or item in menu['sides']:
         if item in cart:
             cart[item] += quantity
         else:
@@ -439,7 +440,18 @@ def calculate_total_cart():
 
 def calculate_sale():
     """Formuliert den Preis des gesamten Warenkorbs nach Rabatten"""
-    global menu, cart, sales
+    global menu, cart, sales_big_order
+    output = ""
+    total=calculate_total_cart()
+    sale_factor=0
+    sale_checkpoint = 0
+    for i in sales_big_order:
+        if total >= i[0]:
+            sale_factor = i[1]
+            sale_checkpoint = i[0]
+    output = f"Der Gesamtwert deines Warenkorbs beträgt {total}€. Da dies über {sale_checkpoint}€ liegt bekommmst du einen Rabatt von {sale_factor*100}%." \
+             f"\nDein zu zahlender Gesamtpreis beträgt also {1-sale_factor*total}€"
+    return output
 
 
 # --------------------------
@@ -473,7 +485,7 @@ def replace_vars(text):
                '_show-last-order': str(show_last_order()),
                '_analyse-edit-cart': edit_cart_response,
                '_edit-cart': str(show_edit_cart()),
-               '_rabatt-berechnen': str(calculat_sale())
+               '_rabatt-berechnen': str(calculate_sale())
                }
 
     for condition in replace:
