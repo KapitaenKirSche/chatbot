@@ -80,7 +80,7 @@ outputs = {
         "name" : "warenkorb_bearbeiten_innit",
         "checked" : False,
         "multiple": True,
-        "phrases" : ["Natürlich.\n_edit-cart"]
+        "phrases" : ["Natürlich.\n\n_edit-cart"]
     }, {
         "name" : "warenkorb_bearbeiten",
         "checked" : False,
@@ -306,6 +306,8 @@ def analyse_edit_cart(input):
                 i-=1
             else:
                 text[i] = word.replace(".", "")
+        else:
+            text[i] = word.replace("x", "")
 
     i=-1
     for k in range(len(text)):
@@ -333,9 +335,12 @@ def analyse_edit_cart(input):
         return f"Tut mir Leid, dein Warenkorb ist zu klein. Die Nummer {number}. ist nicht drauf."
     elif delete:
         if len(ints_in_text) == 1:
-            return f"{ints_in_text[0]}x {item_in_cart} ({number}.) gelöscht/"
-        elif len(ints_in_text) >= 1:
             remove_from_cart(item_in_cart, ints_in_text[0])
+            if ordered_cart[number-1][1] < ints_in_text[0]:
+                return f"Du hast {item_in_cart} nicht {ints_in_text[0]} mal im Warenkorb. {ordered_cart[number-1][1]}x {item_in_cart} ({number}.) gelöscht."
+            else:
+                return f"{ints_in_text[0]}x {item_in_cart} ({number}.) gelöscht."
+        elif len(ints_in_text) >= 1:
             return f"Ich weiß nicht wie häufig du die Nummer {number}. löschen möchtest. Du hast mehr als eine Zahl geschrieben, versuche noch einmal."
         else:
             remove_from_cart(item_in_cart, ordered_cart[number-1][1])
@@ -352,6 +357,8 @@ def remove_from_cart(item, quantity):
         if cart[item] > quantity:
             cart[item] -= quantity
         elif cart[item] == quantity:
+            del cart[item]
+        else:
             del cart[item]
 
 

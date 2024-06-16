@@ -11,7 +11,7 @@ def main():
     return_text = bot.find_output(bot.dialogue_state)
 
     print(bot.replace_vars(return_text))
-    bot.user_input = input(" >> ")
+    bot.user_input = input("\n >> ")
 
 
 while bot.running:
