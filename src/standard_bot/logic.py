@@ -1,8 +1,8 @@
 import random
 
-#Consts
+# Consts
 PIZZERIA_NAME = "Krustenkrach"
-sales_big_order = [(50,0.05), (100, 0.1), (200, 0,2)]
+sales_big_order = [(50, 0.05), (100, 0.1), (200, 0, 2)]
 words_number_replace = {
     'eins': 1,
     'zwei': 2,
@@ -30,7 +30,7 @@ words_number_replace = {
     'vierundzwanzig': 24,
     'fünfundzwanzig': 25}
 
-#Variables
+# Variables
 running = True
 dialogue_state = "greeting"
 user_input = "_init"
@@ -59,14 +59,16 @@ menu = {
         'salami': {'price': 9.00, 'ingredients': ['tomatensauce', 'käse', 'salami']},
         'hawaii': {'price': 9.50, 'ingredients': ['tomatensauce', 'käse', 'schinken', 'ananas']},
         'veggie': {'price': 8.00, 'ingredients': ['tomatensauce', 'käse', 'paprika', 'pilze', 'zwiebeln']},
-        'quattro stagioni': {'price': 10.00, 'ingredients': ['tomatensauce', 'käse', 'schinken', 'salami', 'paprika', 'pilze']},
+        'quattro stagioni': {'price': 10.00,
+                             'ingredients': ['tomatensauce', 'käse', 'schinken', 'salami', 'paprika', 'pilze']},
         'prosciutto e funghi': {'price': 9.50, 'ingredients': ['tomatensauce', 'käse', 'schinken', 'pilze']},
         'diavolo': {'price': 10.00, 'ingredients': ['tomatensauce', 'käse', 'scharfe salami', 'peperoni']},
         'calzone': {'price': 10.00, 'ingredients': ['tomatensauce', 'käse', 'schinken', 'salami', 'pilze']},
         'quattro formaggi': {'price': 9.50, 'ingredients': ['tomatensauce', 'vier verschiedene käse']},
         'funghi': {'price': 8.50, 'ingredients': ['tomatensauce', 'käse', 'pilze']},
         'tonno': {'price': 9.50, 'ingredients': ['tomatensauce', 'käse', 'thunfisch', 'zwiebeln']},
-        'capricciosa': {'price': 10.00, 'ingredients': ['tomatensauce', 'käse', 'schinken', 'artischocken', 'pilze', 'oliven']}
+        'capricciosa': {'price': 10.00,
+                        'ingredients': ['tomatensauce', 'käse', 'schinken', 'artischocken', 'pilze', 'oliven']}
     },
     'drinks': {
         'cola': {'price': 2.50},
@@ -212,7 +214,8 @@ def process_input_ordering(input):
             allowed_outputs.append("show_menu")
 
 
-    elif last_output in ["ordering_default", "new_order", "show_cart", 'warenkorb_bearbeiten_innit', 'warenkorb_bearbeiten']:
+    elif last_output in ["ordering_default", "new_order", "show_cart", 'warenkorb_bearbeiten_innit',
+                         'warenkorb_bearbeiten']:
         if last_output == "show_cart" and did_accept(input):
             allowed_outputs.append("warenkorb_bearbeiten_innit")
 
@@ -257,18 +260,18 @@ def show_menu(with_ingredients=False):
     menu_output_string += "Pizzen:"
     menu_output_string += "\n"
     for (pizza, attributes) in menu['pizzas'].items():
-        menu_output_string += f"  {pizza[0].capitalize() + pizza[1:]}: {attributes['price']}€"
+        menu_output_string += f"  {pizza[0].capitalize() + pizza[1:]}: {attributes['price']:.2f}€"
         menu_output_string += "\n"
 
     menu_output_string += ("\nGetränke:")
     for (drink, attributes) in menu['drinks'].items():
-        menu_output_string += f"  {drink[0].capitalize() + drink[1:]}: {attributes['price']}€"
+        menu_output_string += f"  {drink[0].capitalize() + drink[1:]}: {attributes['price']:.2f}€"
         menu_output_string += "\n"
 
     menu_output_string += ("\nBeilagen:")
     menu_output_string += "\n"
     for (drink, attributes) in menu['sides'].items():
-        menu_output_string += f"  {drink[0].capitalize() + drink[1:]}: {attributes['price']}€"
+        menu_output_string += f"  {drink[0].capitalize() + drink[1:]}: {attributes['price']:.2f}€"
         menu_output_string += "\n"
 
     return menu_output_string
@@ -291,9 +294,9 @@ def show_cart():
         output = "Warenkorb:\n"
         price = 0
         for (item, quantity) in cart.items():
-            output += f"{quantity}x {item[0].capitalize() + item[1:]} - {get_item_price(item)}€ pro Stück, {get_item_price(item) * int(quantity)}€ gesamt.\n"
+            output += f"{quantity}x {item[0].capitalize() + item[1:]} - {get_item_price(item):.2f}€ pro Stück, {get_item_price(item) * int(quantity):.2f}€ gesamt.\n"
             price += calculate_total_cart()
-        output += f"Gesamtpreis: {price}€"
+        output += f"Gesamtpreis: {price:.2f}€"
         return output
 
 
@@ -366,7 +369,7 @@ def add_to_cart(item, quantity):
 
 def analyse_edit_cart(input):
     """Analysiert einen Text darauf ob der Benutzer etwas im Warenkorb bearbeiten möchte"""
-    global ordered_cart
+    global ordered_cart, words_number_replace
 
     input = input.lower()
     text = input.split()
@@ -378,8 +381,9 @@ def analyse_edit_cart(input):
     for k in range(len(text)):
         i += 1
         word = text[i]
-        if text[i].lower() in words_number_replace:
-            text[i] = str(words_number_replace[text[i]])
+        if word.lower() in words_number_replace:
+            text[i] = str(words_number_replace[word])
+            print(text)
         if word[-1] == ".":
             is_number = True
             for letter in word[:-1]:
@@ -450,7 +454,7 @@ def remove_from_cart(item, quantity):
 def checkout():
     """Gibt den Gesamtpreis aus und bedankt sich für die Bestellung."""
     total = calculate_total_cart()
-    print(f"Your total is {total}€. Thank you for your order!")
+    print(f"Your total is {total:.2f}€. Thank you for your order!")
 
 
 # calc
@@ -479,15 +483,18 @@ def calculate_sale():
     """Formuliert den Preis des gesamten Warenkorbs nach Rabatten"""
     global menu, cart, sales_big_order
     output = ""
-    total=calculate_total_cart()
-    sale_factor=0
+    total = calculate_total_cart()
+    sale_factor = 0
     sale_checkpoint = 0
     for i in sales_big_order:
         if total >= i[0]:
             sale_factor = i[1]
             sale_checkpoint = i[0]
-    output = f"Der Gesamtwert deines Warenkorbs beträgt {total}€. Da dies über {sale_checkpoint}€ liegt bekommmst du einen Rabatt von {sale_factor*100}%." \
-             f"\nDein zu zahlender Gesamtpreis beträgt also {(1-sale_factor)*total}€"
+    output = f"Der Gesamtwert deines Warenkorbs beträgt {total:.2f}€." f"Da dies über {sale_checkpoint:.2f}€ liegt bekommmst du einen Rabatt von {sale_factor * 100:.0f}%." \
+             f"\nDein zu zahlender Gesamtpreis beträgt also {(1 - sale_factor) * total:.2f}€"
+    if sale_factor != 0:
+        output += f"Da dies über {sale_checkpoint:.2f}€ liegt bekommmst du einen Rabatt von {sale_factor * 100:.0f}%." \
+                  f"\nDein zu zahlender Gesamtpreis beträgt also {(1 - sale_factor) * total:.2f}€"
     return output
 
 
