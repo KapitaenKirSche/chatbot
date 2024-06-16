@@ -4,7 +4,6 @@ import logic as bot
 def main():
     """Hauptfunktion zum Ausführen des Chatbots."""
     return_text = ""
-    print(bot.last_output)
 
     if bot.user_input != "_init":
         bot.process_input(bot.user_input)

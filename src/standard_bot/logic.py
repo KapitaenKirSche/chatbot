@@ -70,7 +70,7 @@ outputs = {
         "name" : "new_order",
         "checked" : False,
         "multiple": True,
-        "phrases" : ["Danke für die Aufnahme einer Bestellung _user-name! Folgendes hast du gerade bestellt: \n_show-last-order \nMöchtest du den gesamten Warenkorb ansehen oder bearbeiten, die Speisekarte begutachten, nochmehr bestellen('z.B. 2 mal magherita) oder bezahlen"]
+        "phrases" : ["Danke für die Aufnahme einer Bestellung _user-name! Folgendes hast du gerade bestellt: \n_show-last-order \nMöchtest du den gesamten Warenkorb ansehen oder bearbeiten, die Speisekarte begutachten, nochmehr bestellen('z.B. 2 mal magherita) oder bezahlen?"]
     }, {
         "name" : "show_cart",
         "checked" : False,
@@ -85,7 +85,7 @@ outputs = {
         "name" : "warenkorb_bearbeiten",
         "checked" : False,
         "multiple": True,
-        "phrases" : ["Wenn du den Warenkorb nicht mehr bearbeiten möchtest, schreibe einfach 'abbbrechen'.\n_edit-cart\n\n_analyse-edit-cart \n"]
+        "phrases" : ["_analyse-edit-cart\n\n_edit-cart\nWenn du den Warenkorb nicht mehr bearbeiten möchtest, schreibe einfach 'abbbrechen'."]
     }],
     "checkout" : [{
         "name" : "checkout_default",
@@ -329,31 +329,30 @@ def analyse_edit_cart(input):
 
     if number == 0:
         return "Tut mir Leid, du musst noch eine Nummer zum bearbeiten eingeben. (z. B. '2. löschen.')"
+    elif number_valid == False:
+        return f"Tut mir Leid, dein Warenkorb ist zu klein. Die Nummer {number}. ist nicht drauf."
     elif delete:
         if len(ints_in_text) == 1:
-            return f"Nummer {number} {ints_in_text[0]} mal gelöscht"
+            return f"{ints_in_text[0]}x {item_in_cart} ({number}.) gelöscht/"
         elif len(ints_in_text) >= 1:
+            remove_from_cart(item_in_cart, ints_in_text[0])
             return f"Ich weiß nicht wie häufig du die Nummer {number}. löschen möchtest. Du hast mehr als eine Zahl geschrieben, versuche noch einmal."
         else:
-            return f"Nummer {number} {99} mal gelöscht"
+            remove_from_cart(item_in_cart, ordered_cart[number-1][1])
+            return f"{ordered_cart[number-1][1]}x {item_in_cart} ({number}.) gelöscht."
     else:
-        return "Du musst dazu schreiben, was du mit dem Artikel machen möchtest."
+        return "Du musst dazu schreiben, was du mit dem Artikel machen möchtest, versuche noch einmal."
 
 
 def remove_from_cart(item, quantity):
     """Entfernt einen Artikel in einer bestimmten Menge aus dem Warenkorb."""
+    global cart
+
     if item in cart:
         if cart[item] > quantity:
             cart[item] -= quantity
-            print(f"{quantity}x {item} entfernt.")
         elif cart[item] == quantity:
             del cart[item]
-            print(f"{item} removed from your -cart.")
-        else:
-            print(f"Du hast nur {cart[item]}x {item} im Warenkorb.")
-    else:
-        print(f"{item} ist nicht in deinem Warenkorb.")
-
 
 
 
@@ -408,8 +407,9 @@ def replace_vars(text):
                '_menu' : str(show_menu()),
                '_cart' : str(show_cart()),
                '_show-last-order':str(show_last_order()),
-               '_edit-cart':str(show_edit_cart()),
-               '_analyse-edit-cart' : edit_cart_response}
+               '_analyse-edit-cart': edit_cart_response,
+               '_edit-cart':str(show_edit_cart())
+               }
 
     for condition in replace:
         text = text.replace(condition, replace[condition])
