@@ -145,8 +145,9 @@ outputs = {
         "checked": False,
         "multiple": True,
         "phrases": [
-            "_analyse-edit-cart\n\n_edit-cart\nWenn du den Warenkorb nicht mehr bearbeiten möchtest, schreibe einfach 'abbbrechen'."]
+            "_analyse-edit-cart\n\n_edit-cart\nWenn du den Warenkorb nicht mehr bearbeiten möchtest, schreibe einfach 'abbbrechen'. Du kannst natürlich auch wie immer noch mehr bestellen, die Speisekarte begutachten, etc."]
     }],
+
     "checkout": [{
         "name": "checkout_default",
         "checked": False,
@@ -194,6 +195,9 @@ def process_input_greeting(input):
             allowed_outputs.append("end")
             running = False
 
+    if input.lower() in ['help', 'hilfe', 'info']:
+        allowed_outputs.append("help")
+
 
 def process_input_ordering(input):
     global dialogue_state, user_name, last_output, allowed_outputs, edit_cart_response
@@ -206,13 +210,9 @@ def process_input_ordering(input):
     if last_output == "ordering_innit":
         if "speisekarte" in input.lower():
             allowed_outputs.append("show_menu")
-    elif last_output == "warenkorb_bearbeiten_innit" or last_output == "warenkorb_bearbeiten":
-        if input.lower() in ["abbrechen", "abbruch", "stop"]:
-            allowed_outputs.append("ordering_default")
-        else:
-            edit_cart_response = analyse_edit_cart(input)
-            allowed_outputs.append("warenkorb_bearbeiten")
-    elif last_output in ["ordering_default", "new_order", "show_cart"]:
+
+
+    elif last_output in ["ordering_default", "new_order", "show_cart", 'warenkorb_bearbeiten_innit', 'warenkorb_bearbeiten']:
         if last_output == "show_cart" and did_accept(input):
             allowed_outputs.append("warenkorb_bearbeiten_innit")
 
@@ -225,6 +225,13 @@ def process_input_ordering(input):
             allowed_outputs.append("warenkorb_bearbeiten_innit")
         elif "warenkorb" in input.lower():
             allowed_outputs.append("show_cart")
+
+        if last_output == "warenkorb_bearbeiten_innit" or last_output == "warenkorb_bearbeiten":
+            if input.lower() in ["abbrechen", "abbruch", "stop"]:
+                allowed_outputs.append("ordering_default")
+            else:
+                edit_cart_response = analyse_edit_cart(input)
+                allowed_outputs.append("warenkorb_bearbeiten")
 
 
 # Funktionen für Ausgaben des Bots
