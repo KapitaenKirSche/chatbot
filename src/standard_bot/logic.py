@@ -62,16 +62,11 @@ menu = {
         'salami': {'price': 9.00, 'ingredients': ['tomatensauce', 'käse', 'salami']},
         'hawaii': {'price': 9.50, 'ingredients': ['tomatensauce', 'käse', 'schinken', 'ananas']},
         'veggie': {'price': 8.00, 'ingredients': ['tomatensauce', 'käse', 'paprika', 'pilze', 'zwiebeln']},
-        'quattro stagioni': {'price': 10.00,
-                             'ingredients': ['tomatensauce', 'käse', 'schinken', 'salami', 'paprika', 'pilze']},
-        'prosciutto e funghi': {'price': 9.50, 'ingredients': ['tomatensauce', 'käse', 'schinken', 'pilze']},
         'diavolo': {'price': 10.00, 'ingredients': ['tomatensauce', 'käse', 'scharfe salami', 'peperoni']},
         'calzone': {'price': 10.00, 'ingredients': ['tomatensauce', 'käse', 'schinken', 'salami', 'pilze']},
-        'quattro formaggi': {'price': 9.50, 'ingredients': ['tomatensauce', 'vier verschiedene käse']},
         'funghi': {'price': 8.50, 'ingredients': ['tomatensauce', 'käse', 'pilze']},
         'tonno': {'price': 9.50, 'ingredients': ['tomatensauce', 'käse', 'thunfisch', 'zwiebeln']},
-        'capricciosa': {'price': 10.00,
-                        'ingredients': ['tomatensauce', 'käse', 'schinken', 'artischocken', 'pilze', 'oliven']}
+        'capricciosa': {'price': 10.00, 'ingredients': ['tomatensauce', 'käse', 'schinken', 'artischocken', 'pilze', 'oliven']}
     },
     'drinks': {
         'cola': {'price': 2.50},
@@ -83,13 +78,12 @@ menu = {
         'espresso': {'price': 1.50},
         'cappuccino': {'price': 2.00},
         'macchiato': {'price': 2.50},
-        'flat white': {'price': 2.50},
+        'flatwhite': {'price': 2.50},
         'latte': {'price': 3.00}
     },
     'sides': {
         'pommes': {'price': 2.50},
-        'mozzarella sticks': {'price': 4.00},
-        'gemischter salat': {'price': 3.50},
+        'salat': {'price': 3.50},
         'oliven': {'price': 2.00},
         'knoblauchbrot': {'price': 3.00}
     }
@@ -554,10 +548,9 @@ def analyse_and_calc_after_tip(input):
             if numb.isnumeric() == False:
                 isnumb = False
         if isnumb:
-            if int(numb) > 1:
-                return (1 + int(numb)/100) * total
-            else:
-                return (1 + int(numb) / 100) * total
+            print((1 + int(word)/100) * total)
+            return (1 + int(word)/100) * total
+
     return total
 
 
@@ -580,7 +573,6 @@ def calculate_total_cart():
     total = 0
     for item, quantity in cart.items():
         total += get_item_price(item) * quantity
-    print(total)
     return total
 
 
