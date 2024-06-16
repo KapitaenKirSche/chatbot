@@ -3,6 +3,32 @@ import random
 #Consts
 PIZZERIA_NAME = "Krustenkrach"
 sales_big_order = [(50,0.05), (100, 0.1), (200, 0,2)]
+words_number_replace = {
+    'eins': 1,
+    'zwei': 2,
+    'drei': 3,
+    'vier': 4,
+    'fünf': 5,
+    'sechs': 6,
+    'sieben': 7,
+    'acht': 8,
+    'neun': 9,
+    'zehn': 10,
+    'elf': 11,
+    'zwölf': 12,
+    'dreizehn': 13,
+    'vierzehn': 14,
+    'fünfzehn': 15,
+    'sechzehn': 16,
+    'siebzehn': 17,
+    'achtzehn': 18,
+    'neunzehn': 19,
+    'zwanzig': 20,
+    'einundzwanzig': 21,
+    'zweiundzwanzig': 22,
+    'dreiundzwanzig': 23,
+    'vierundzwanzig': 24,
+    'fünfundzwanzig': 25}
 
 #Variables
 running = True
@@ -283,11 +309,13 @@ def show_edit_cart():
 # -----------------------------------------------------------------------------------------------------
 def analyse_order_and_add_to_cart(input):
     """Prüft in einem Text, ob etwas bestellt worden ist, und fügt ggf. mit add_to_cart() zum Warenkorb hinzu."""
-    global valid_order, last_order
+    global valid_order, last_order, words_number_replace
     did_order = False
     input = input.replace('x', ' ')
     text_list = input.split()
     for i in range(len(text_list)):
+        if text_list[i].lower() in words_number_replace:
+            text_list[i] = str(words_number_replace[text_list[i]])
         if text_list[i].lower() not in valid_order:
             for j in range(len(text_list[i])):
                 if text_list[i][j].isnumeric() == False:
@@ -343,6 +371,8 @@ def analyse_edit_cart(input):
     for k in range(len(text)):
         i += 1
         word = text[i]
+        if text[i].lower() in words_number_replace:
+            text[i] = str(words_number_replace[text[i]])
         if word[-1] == ".":
             is_number = True
             for letter in word[:-1]:
@@ -450,7 +480,7 @@ def calculate_sale():
             sale_factor = i[1]
             sale_checkpoint = i[0]
     output = f"Der Gesamtwert deines Warenkorbs beträgt {total}€. Da dies über {sale_checkpoint}€ liegt bekommmst du einen Rabatt von {sale_factor*100}%." \
-             f"\nDein zu zahlender Gesamtpreis beträgt also {1-sale_factor*total}€"
+             f"\nDein zu zahlender Gesamtpreis beträgt also {(1-sale_factor)*total}€"
     return output
 
 
