@@ -116,7 +116,7 @@ outputs = {
         "checked": False,
         "multiple": False,
         "phrases": [
-            "Sehr schön. Um die Speisekarte zu sehen schreibe einfach 'Speisekarte'. Du kannst natürlich auch sofort bestellen (bspw. '3x Margherita und 2mal eine cola')"]
+            "Sehr schön. Um die Speisekarte zu sehen schreibe einfach 'Speisekarte'. Du kannst natürlich auch sofort bestellen (bspw. '3x Margherita und 2mal eine cola'). \nTipp: du kannst mit dem Schlüsselwort 'help' oder 'info' immer Hilfe bekommen."]
     }, {
         "name": "ordering_default",
         "checked": False,
@@ -151,6 +151,21 @@ outputs = {
         "multiple": True,
         "phrases": [
             "_analyse-edit-cart\n\n_edit-cart\nWenn du den Warenkorb nicht mehr bearbeiten möchtest, schreibe einfach 'abbbrechen'. Du kannst natürlich auch wie immer noch mehr bestellen, die Speisekarte begutachten, etc."]
+    }, {
+        "name": "help",
+        "checked": False,
+        "multiple": True,
+        "phrases": ["Du bist gerade beim bestellmodus. Du kannst meistens folgende Aktionen ausführen:"
+                    "\nBestellen: Dafür einfach schreiben was du auf den Warenkorb hinzufügen möchtest (Bsp.: 'dreimal Cola und 2xSalami')"
+                    "\nWarenkorb ansehen: Alle bestellten Sachen aufgelistet haben (Bsp.: 'Ich würde gerne den Warenkorb sehen.')"
+                    "\nSpeisekarte: Um die ganze Speisekarte mitsamt Preisen zu sehen schreibe einfach soetwas wie ('Darf ich die Speisekarte anschauen?)"
+                    "\nBezahlen: Wenn du deine Bestellung beenden möchtest kannst du dies mit beispielsweise 'Ich möchte bezahlen' tun."
+                    "\nWarenkorb bearbeiten: Wenn du schreibst das du den Warenkorb bearbeiten möchtest, werden dir alle Gerichte auf deinem Warenkorb nummeriert aufgelistet."
+                    "\n    Möchtest du eins der Gerichte entfernen musst du 3 Bestandteile angeben."
+                    "\n        1. Die Nummer, die vor dem Gericht steht. Der Punkt nach der Nummer ist sehr wichtig (bspw. '5.')."
+                    "\n        2. Das Schlüsselwort 'löschen'"
+                    "\n        3. Die Anzahl, wieviel vom jeweiligen Artikel entfernt werden soll."
+                    "\n         Bsp.: 'Ich möchte gerne 5 mal Nummer 3. löschen'"]
     }],
 
     "checkout": [{
@@ -205,6 +220,9 @@ def process_input_greeting(input):
     global dialogue_state, user_name, last_output, allowed_outputs, running
     allowed_outputs = []
 
+    if input.lower() in ['help', 'hilfe', 'info']:
+        allowed_outputs.append("help")
+
     if last_output == "welcome":  # Gerade eben nach Name gefragt
         user_name = input
         allowed_outputs.append("order_general_q")
@@ -217,8 +235,6 @@ def process_input_greeting(input):
             allowed_outputs.append("end")
             running = False
 
-    if input.lower() in ['help', 'hilfe', 'info']:
-        allowed_outputs.append("help")
 
 
 def process_input_ordering(input):
@@ -226,16 +242,21 @@ def process_input_ordering(input):
 
     edit_cart_response = ""
     allowed_outputs = []
-    if last_output in ["ordering_innit", "ordering_default", "show_menu", "new_order", "show_cart"]:
+
+    if input.lower() in ['help', 'hilfe', 'info']:
+        allowed_outputs.append("help")
+
+    if last_output in ["ordering_innit", "ordering_default", "show_menu", "new_order", "show_cart", "help"]:
         if analyse_order_and_add_to_cart(input):
             allowed_outputs.append("new_order")
+
     if last_output == "ordering_innit":
         if "speisekarte" in input.lower():
             allowed_outputs.append("show_menu")
 
 
     elif last_output in ["ordering_default", "new_order", "show_cart", 'warenkorb_bearbeiten_innit',
-                         'warenkorb_bearbeiten']:
+                         'warenkorb_bearbeiten', "help"]:
         if last_output == "show_cart" and did_accept(input):
             allowed_outputs.append("warenkorb_bearbeiten_innit")
 
@@ -244,7 +265,7 @@ def process_input_ordering(input):
             allowed_outputs.append("checkout_default")
         elif "speisekarte" in input.lower():
             allowed_outputs.append("show_menu")
-        elif "bearbeit" in input.lower():
+        elif "bearbeit" in input.lower() or "edit" in input.lower():
             allowed_outputs.append("warenkorb_bearbeiten_innit")
         elif "warenkorb" in input.lower():
             allowed_outputs.append("show_cart")
@@ -261,6 +282,9 @@ def process_input_checkout(input):
     global dialogue_state, user_name, last_output, allowed_outputs, running, adress, total_after_tip
     allowed_outputs = []
     total_after_tip = 0
+
+    if input.lower() in ['help', 'hilfe', 'info']:
+        allowed_outputs.append("help")
 
     if last_output == 'checkout_default':
         if did_accept(input):
@@ -287,7 +311,8 @@ def find_output(current_state):
         if dic["checked"] == False or dic["multiple"] == True:
             if dic["name"] in allowed_outputs:
                 dic["checked"] = True
-                last_output = dic["name"]
+                if dic["name"] not in []:
+                    last_output = dic["name"]
                 return random.choice(dic["phrases"])
 
     for state in outputs:
