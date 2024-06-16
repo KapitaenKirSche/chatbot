@@ -15,6 +15,8 @@ user_name = "Ingo Knito"
 
 allowed_outputs = ["welcome"]
 last_output = ""
+
+edit_cart_response = ""
 # Menü mit Pizzen und Getränken
 menu = {
     'pizzas': {
@@ -50,10 +52,15 @@ outputs = {
     }],
 
     "ordering" : [{
-        "name" : "ordering_default",
+        "name" : "ordering_innit",
         "checked" : False,
         "multiple": False,
         "phrases" : ["Sehr schön. Um die Speisekarte zu sehen schreibe einfach 'Speisekarte'. Du kannst natürlich auch sofort bestellen (bspw. '3x Margherita und 2mal eine cola')"]
+    }, {
+        "name" : "ordering_default",
+        "checked" : False,
+        "multiple": True,
+        "phrases" : ["Um die Speisekarte zu sehen schreibe einfach 'Speisekarte'. Du kannst natürlich auch sofort bestellen (bspw. '3x Margherita und 2mal eine cola'), den Warenkorb anschauen & bearbeiten oder schon bezahlen."]
     }, {
         "name" : "show_menu",
         "checked" : False,
@@ -78,7 +85,7 @@ outputs = {
         "name" : "warenkorb_bearbeiten",
         "checked" : False,
         "multiple": True,
-        "phrases" : ["Natürlich.\n_edit-cart"]
+        "phrases" : ["Wenn du den Warenkorb nicht mehr bearbeiten möchtest, schreibe einfach 'abbbrechen'.\n_edit-cart\n\n_analyse-edit-cart \n"]
     }],
     "checkout" : [{
         "name" : "checkout_default",
@@ -114,13 +121,14 @@ def process_input(input):
 def process_input_greeting(input):
     global dialogue_state, user_name, last_output, allowed_outputs
     allowed_outputs = []
+
     if last_output == "welcome":  # Gerade eben nach Name gefragt
         user_name = input
         allowed_outputs.append("order_general_q")
     elif last_output == "order_general_q":
         if did_accept(input):
             dialogue_state = "ordering"
-            allowed_outputs.append("ordering_default")
+            allowed_outputs.append("ordering_innit")
         elif did_decline(input):
             dialogue_state = "end_cancel"
             allowed_outputs.append("end")
@@ -128,17 +136,26 @@ def process_input_greeting(input):
 
 
 def process_input_ordering(input):
-    global dialogue_state, user_name, last_output, allowed_outputs
+    global dialogue_state, user_name, last_output, allowed_outputs, edit_cart_response
+
+    edit_cart_response = ""
     allowed_outputs = []
-    if last_output in ["ordering_default", "show_menu", "new_order","show_cart"]:
+    if last_output in ["ordering_innit", "ordering_default", "show_menu", "new_order","show_cart"]:
         if analyse_order_and_add_to_cart(input):
             allowed_outputs.append("new_order")
-    if last_output == "ordering_default":
+    if last_output == "ordering_innit":
         if "speisekarte" in input.lower():
             allowed_outputs.append("show_menu")
-    elif last_output == "warenkorb_bearbeiten_innit" or last_output == " warenkorb_bearbeiten":
-        allowed_outputs.append("warenkorb_bearbeiten")
-    elif last_output in ["new_order", "show_cart"]:
+    elif last_output == "warenkorb_bearbeiten_innit" or last_output == "warenkorb_bearbeiten":
+        if input.lower() in ["abbrechen", "abbruch", "stop"]:
+            allowed_outputs.append("ordering_default")
+        else:
+            edit_cart_response = analyse_edit_cart(input)
+            allowed_outputs.append("warenkorb_bearbeiten")
+    elif last_output in ["ordering_default", "new_order", "show_cart"]:
+        if last_output == "show_cart" and did_accept(input):
+            allowed_outputs.append("warenkorb_bearbeiten_innit")
+
         if "bezahl" in input.lower():
             dialogue_state = "checkout"
             allowed_outputs.append("checkout_default")
@@ -207,8 +224,9 @@ def show_edit_cart():
     ordered_cart=[]
     output = "Warenkorb:\n"
     price = 0
-    i=1
+    i=0
     for (item, quantity) in cart.items():
+        i+=1
         ordered_cart.append((item, quantity))
         output += f"{i}. {quantity}x {item[0].capitalize() + item[1:]}\n"
         price += calculate_total_cart()
@@ -264,19 +282,62 @@ def add_to_cart(item, quantity):
 
 
 def analyse_edit_cart(input):
-    """"""
+    """Analysiert einen Text darauf ob der Benutzer etwas im Warenkorb bearbeiten möchte"""
     global ordered_cart
+
     input = input.lower()
     text = input.split()
-    nummer=0
+    number=0
+    ints_in_text=[]
+    delete = False
 
+    i=-1
+    for k in range(len(text)):
+        i+=1
+        word=text[i]
+        if word[-1] == ".":
+            is_number=True
+            for letter in word[:-1]:
+                if letter.isnumeric() == False:
+                    is_number=False
+            if is_number:
+                number = int(word.replace(".", ""))
+                del text[i]
+                i-=1
+            else:
+                text[i] = word.replace(".", "")
 
-    for word in text:
-        if "." in word:
-            nummer = int(word.replace(".", ""))
+    i=-1
+    for k in range(len(text)):
+        i += 1
+        word = text[i]
+        is_number = True
+        if "lösch" in word:
+            delete = True
+        for letter in word:
+            if letter.isnumeric() == False:
+                is_number = False
+        if is_number:
+            ints_in_text.append(int(word))
 
-    if "löschen" in text:
-        pass
+    number_valid = False
+    item_in_cart = ""
+    if number != 0:
+        if number <= len(ordered_cart):
+            number_valid = True
+            item_in_cart = ordered_cart[number-1][0]
+
+    if number == 0:
+        return "Tut mir Leid, du musst noch eine Nummer zum bearbeiten eingeben. (z. B. '2. löschen.')"
+    elif delete:
+        if len(ints_in_text) == 1:
+            return f"Nummer {number} {ints_in_text[0]} mal gelöscht"
+        elif len(ints_in_text) >= 1:
+            return f"Ich weiß nicht wie häufig du die Nummer {number}. löschen möchtest. Du hast mehr als eine Zahl geschrieben, versuche noch einmal."
+        else:
+            return f"Nummer {number} {99} mal gelöscht"
+    else:
+        return "Du musst dazu schreiben, was du mit dem Artikel machen möchtest."
 
 
 def remove_from_cart(item, quantity):
@@ -341,13 +402,14 @@ def did_decline(input):
 
 def replace_vars(text):
     """Ersetzt Variablen im Text durch den entsprechenden Wert."""
-    global user_name, PIZZERIA_NAME
+    global user_name, PIZZERIA_NAME, edit_cart_response
     replace = {'_user-name' : user_name,
                '_pizzeria-name' : PIZZERIA_NAME,
                '_menu' : str(show_menu()),
                '_cart' : str(show_cart()),
                '_show-last-order':str(show_last_order()),
-               '_edit-cart':str(show_edit_cart())}
+               '_edit-cart':str(show_edit_cart()),
+               '_analyse-edit-cart' : edit_cart_response}
 
     for condition in replace:
         text = text.replace(condition, replace[condition])
