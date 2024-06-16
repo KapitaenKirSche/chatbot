@@ -20,17 +20,41 @@ edit_cart_response = ""
 # Menü mit Pizzen und Getränken
 menu = {
     'pizzas': {
-        'margherita': {'price': 8.50, 'ingredients': ['käse']},
-        'salami': {'price': 9.00, 'ingredients': ['salami']},
-        'hawaii': {'price': 9.50, 'ingredients': ['schinken', 'ananas']},
-        'veggie': {'price': 8.00, 'ingredients': ['paprika', 'pilze', 'zwiebeln']}
+        'margherita': {'price': 8.50, 'ingredients': ['tomatensauce', 'käse']},
+        'salami': {'price': 9.00, 'ingredients': ['tomatensauce', 'käse', 'salami']},
+        'hawaii': {'price': 9.50, 'ingredients': ['tomatensauce', 'käse', 'schinken', 'ananas']},
+        'veggie': {'price': 8.00, 'ingredients': ['tomatensauce', 'käse', 'paprika', 'pilze', 'zwiebeln']},
+        'quattro stagioni': {'price': 10.00, 'ingredients': ['tomatensauce', 'käse', 'schinken', 'salami', 'paprika', 'pilze']},
+        'prosciutto e funghi': {'price': 9.50, 'ingredients': ['tomatensauce', 'käse', 'schinken', 'pilze']},
+        'diavolo': {'price': 10.00, 'ingredients': ['tomatensauce', 'käse', 'scharfe salami', 'peperoni']},
+        'calzone': {'price': 10.00, 'ingredients': ['tomatensauce', 'käse', 'schinken', 'salami', 'pilze']},
+        'quattro formaggi': {'price': 9.50, 'ingredients': ['tomatensauce', 'vier verschiedene käse']},
+        'funghi': {'price': 8.50, 'ingredients': ['tomatensauce', 'käse', 'pilze']},
+        'tonno': {'price': 9.50, 'ingredients': ['tomatensauce', 'käse', 'thunfisch', 'zwiebeln']},
+        'capricciosa': {'price': 10.00, 'ingredients': ['tomatensauce', 'käse', 'schinken', 'artischocken', 'pilze', 'oliven']}
     },
     'drinks': {
-        'cola': {'price':2.50},
-        'wasser': {'price':1.50},
-        'bier': {'price':3.00}
+        'cola': {'price': 2.50},
+        'fanta': {'price': 2.50},
+        'sprite': {'price': 2.50},
+        'wasser': {'price': 1.00},
+        'bier': {'price': 3.00},
+        'wein': {'price': 4.00},
+        'espresso': {'price': 1.50},
+        'cappuccino': {'price': 2.00},
+        'macchiato': {'price': 2.50},
+        'flat white': {'price': 2.50},
+        'latte': {'price': 3.00}
+    },
+    'sides': {
+        'pommes': {'price': 2.50},
+        'mozzarella sticks': {'price': 4.00},
+        'gemischter salat': {'price': 3.50},
+        'oliven': {'price': 2.00},
+        'knoblauchbrot': {'price': 3.00}
     }
 }
+
 valid_order = []
 for a in menu:
     for b in menu[a]:
@@ -191,10 +215,16 @@ def show_menu():
         menu_output_string+="\n"
 
     menu_output_string += ("\nGetränke:")
-    menu_output_string += "\n"
     for (drink, attributes) in menu['drinks'].items():
         menu_output_string += f"{drink[0].capitalize() + drink[1:]}: {attributes['price']}€"
         menu_output_string += "\n"
+
+    menu_output_string += ("\nBeilagen:")
+    menu_output_string += "\n"
+    for (drink, attributes) in menu['sides'].items():
+        menu_output_string += f"{drink[0].capitalize() + drink[1:]}: {attributes['price']}€"
+        menu_output_string += "\n"
+
     return menu_output_string
 
 def show_last_order():
